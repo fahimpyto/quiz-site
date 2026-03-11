@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-#9ynivx+4@5%wz$-a&27&aomb$0rapfjsnljvhca94tq%dfmac
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['quizoo.onrender.com']
 
 
 # Application definition
@@ -116,3 +116,4 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
