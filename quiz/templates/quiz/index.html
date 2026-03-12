@@ -1,0 +1,311 @@
+{% extends "quiz/base.html" %}
+{% load static %}
+
+{% block title %}QuizMaster – Master Your Knowledge{% endblock %}
+{% block meta_description %}Practice unlimited MCQ quizzes and ace your exams with QuizMaster.{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ════════════════════════════════════════
+     HERO
+  ════════════════════════════════════════ */
+  .hero {
+    padding: 80px 0 70px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-blob-1 {
+    position: absolute; top: -140px; right: -180px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(37,99,235,0.09) 0%, transparent 68%);
+    pointer-events: none; border-radius: 50%;
+  }
+  .hero-blob-2 {
+    position: absolute; bottom: -100px; left: -120px;
+    width: 450px; height: 450px;
+    background: radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 68%);
+    pointer-events: none; border-radius: 50%;
+  }
+  .hero-content { position: relative; z-index: 1; }
+
+  .hero-live-pill {
+    display: inline-flex; align-items: center; gap: 0.45rem;
+    background: var(--secondary-light); color: var(--secondary-hover);
+    border: 1px solid rgba(16,185,129,0.25); border-radius: 100px;
+    padding: 5px 14px; font-size: 0.8rem; font-weight: 700;
+    margin-bottom: 1.4rem; font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .live-dot {
+    width: 8px; height: 8px; background: var(--secondary);
+    border-radius: 50%; animation: livePulse 2s infinite; flex-shrink: 0;
+  }
+  @keyframes livePulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.5;transform:scale(1.4);} }
+
+  .hero-title { font-size: clamp(2rem, 5.5vw, 3.5rem); font-weight: 800; margin-bottom: 1.25rem; line-height: 1.15; }
+  .hero-title .highlight {
+    background: linear-gradient(120deg, var(--primary) 0%, #6366f1 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .hero-subtitle { font-size: 1.1rem; color: var(--text-soft); line-height: 1.75; margin-bottom: 2.2rem; max-width: 490px; }
+
+  .hero-cta-group { display: flex; gap: 0.85rem; flex-wrap: wrap; margin-bottom: 2.8rem; }
+
+  .btn-primary-solid {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: var(--primary); color: white; padding: 13px 26px;
+    border-radius: var(--radius-md); font-weight: 700; font-size: 0.97rem;
+    border: none; transition: all 0.25s; font-family: 'Plus Jakarta Sans', sans-serif;
+    box-shadow: var(--shadow-btn);
+  }
+  .btn-primary-solid:hover { background: var(--primary-hover); color: white; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,99,235,0.38); }
+
+  .btn-ghost {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: white; color: var(--text); padding: 13px 26px;
+    border-radius: var(--radius-md); font-weight: 700; font-size: 0.97rem;
+    border: 1.5px solid var(--border); transition: all 0.25s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .btn-ghost:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); transform: translateY(-2px); }
+
+  .hero-stats { display: flex; gap: 2rem; flex-wrap: wrap; padding-top: 0.5rem; border-top: 1px solid var(--border); }
+  .hero-stat-val { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.6rem; font-weight: 800; color: var(--text); line-height: 1; }
+  .hero-stat-lbl { font-size: 0.8rem; color: var(--text-muted); margin-top: 3px; }
+
+  /* Hero Visual */
+  .hero-visual-wrap { position: relative; display: flex; align-items: center; justify-content: center; padding: 20px 0; }
+  .quiz-card-mockup {
+    background: white; border-radius: var(--radius-xl);
+    box-shadow: 0 24px 64px rgba(37,99,235,0.13), 0 4px 16px rgba(0,0,0,0.06);
+    padding: 28px 26px; width: 100%; max-width: 370px;
+    animation: cardFloat 5s ease-in-out infinite;
+  }
+  @keyframes cardFloat { 0%,100%{transform:translateY(0px);} 50%{transform:translateY(-12px);} }
+
+  .qcard-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .qcard-pill { background: var(--primary-light); color: var(--primary); font-size: 0.75rem; font-weight: 800; padding: 4px 12px; border-radius: 100px; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .qcard-count { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; }
+  .qcard-q { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.92rem; font-weight: 700; color: var(--text); margin-bottom: 14px; line-height: 1.5; }
+  .qcard-option { display: flex; align-items: center; gap: 10px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; margin-bottom: 8px; font-size: 0.83rem; font-weight: 600; color: var(--text-soft); transition: all 0.15s; }
+  .qcard-option-key { width: 24px; height: 24px; border-radius: 6px; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); flex-shrink: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .qcard-option.is-correct { border-color: var(--secondary); background: var(--secondary-light); color: var(--secondary-hover); }
+  .qcard-option.is-correct .qcard-option-key { background: var(--secondary); color: white; }
+  .qcard-option.is-selected { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
+  .qcard-option.is-selected .qcard-option-key { background: var(--primary); color: white; }
+  .qcard-bar-wrap { background: var(--bg); border-radius: 100px; height: 6px; margin-top: 16px; overflow: hidden; }
+  .qcard-bar-fill { height: 100%; width: 65%; background: linear-gradient(90deg, var(--primary), var(--secondary)); border-radius: 100px; animation: barGrow 2s ease-out forwards; }
+  @keyframes barGrow { from{width:0;} to{width:65%;} }
+  .qcard-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+  .qcard-footer-text { font-size: 0.74rem; color: var(--text-muted); font-weight: 600; }
+  .qcard-next-btn { background: var(--primary); color: white; border: none; border-radius: 7px; padding: 6px 14px; font-size: 0.78rem; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; transition: background 0.2s; }
+  .qcard-next-btn:hover { background: var(--primary-hover); }
+
+  .float-badge { position: absolute; background: white; border-radius: var(--radius-md); padding: 10px 16px; box-shadow: 0 8px 28px rgba(0,0,0,0.10); font-size: 0.78rem; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; display: flex; align-items: center; gap: 0.5rem; white-space: nowrap; color: var(--text); }
+  .float-badge-tl { top: 0px; left: -20px; animation: badgeFloat 4s ease-in-out infinite; }
+  .float-badge-br { bottom: 12px; right: -16px; animation: badgeFloat 4s ease-in-out infinite 1.5s; }
+  @keyframes badgeFloat { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-7px);} }
+
+  @media (max-width: 991.98px) {
+    .hero { padding: 55px 0 50px; text-align: center; }
+    .hero-subtitle { margin: 0 auto 2rem; }
+    .hero-cta-group { justify-content: center; }
+    .hero-stats { justify-content: center; }
+    .hero-visual-wrap { margin-top: 48px; }
+    .float-badge-tl { left: 0; }
+    .float-badge-br { right: 0; }
+  }
+  @media (max-width: 575.98px) {
+    .hero-cta-group { flex-direction: column; }
+    .btn-primary-solid, .btn-ghost { justify-content: center; }
+    .quiz-card-mockup { max-width: 320px; padding: 22px 18px; }
+    .float-badge { display: none; }
+  }
+
+  /* ════════════════════════════════════════
+     FEATURES
+  ════════════════════════════════════════ */
+  .features-section { padding: 80px 0; background: white; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .feature-card { background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius-lg); padding: 30px 24px; height: 100%; transition: all 0.28s cubic-bezier(0.34,1.56,0.64,1); position: relative; overflow: hidden; }
+  .feature-card::after { content: ''; position: absolute; inset: 0; border-radius: var(--radius-lg); background: linear-gradient(140deg, var(--primary-light) 0%, transparent 60%); opacity: 0; transition: opacity 0.28s; pointer-events: none; }
+  .feature-card:hover { border-color: var(--primary-mid); transform: translateY(-6px); box-shadow: var(--shadow-hover); }
+  .feature-card:hover::after { opacity: 1; }
+  .feat-icon { width: 54px; height: 54px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.45rem; margin-bottom: 1.2rem; flex-shrink: 0; position: relative; z-index: 1; }
+  .feat-icon.c-blue   { background: rgba(37,99,235,0.1);  color: var(--primary); }
+  .feat-icon.c-green  { background: rgba(16,185,129,0.1); color: var(--secondary); }
+  .feat-icon.c-indigo { background: rgba(99,102,241,0.1); color: #6366f1; }
+  .feat-icon.c-amber  { background: rgba(245,158,11,0.1); color: #d97706; }
+  .feature-card h5 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; position: relative; z-index: 1; }
+  .feature-card p { font-size: 0.88rem; color: var(--text-soft); line-height: 1.7; margin: 0; position: relative; z-index: 1; }
+
+  /* ════════════════════════════════════════
+     UNLOCK / CTA
+  ════════════════════════════════════════ */
+  .unlock-section { padding: 90px 0; background: linear-gradient(135deg, #0f2d6e 0%, #1d4ed8 45%, var(--primary) 100%); position: relative; overflow: hidden; }
+  .unlock-section::before { content: ''; position: absolute; top: -120px; right: -120px; width: 500px; height: 500px; background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 65%); pointer-events: none; }
+  .unlock-section::after  { content: ''; position: absolute; bottom: -100px; left: -80px; width: 400px; height: 400px; background: radial-gradient(circle, rgba(16,185,129,0.14) 0%, transparent 65%); pointer-events: none; }
+  .unlock-inner { position: relative; z-index: 1; }
+  .unlock-section .eyebrow { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.85); }
+  .unlock-section h2 { color: white; }
+  .unlock-section .section-sub { color: rgba(255,255,255,0.72); max-width: 520px; margin: 0 auto 2rem; }
+  .unlock-checklist { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem 2.5rem; margin-bottom: 2.5rem; }
+  .unlock-check { display: flex; align-items: center; gap: 0.45rem; color: rgba(255,255,255,0.82); font-size: 0.9rem; font-weight: 600; }
+  .unlock-check i { color: var(--secondary); font-size: 1rem; }
+  .btn-unlock-white { display: inline-flex; align-items: center; gap: 0.5rem; background: white; color: var(--primary); padding: 13px 28px; border-radius: var(--radius-md); font-weight: 800; font-size: 0.97rem; border: none; transition: all 0.25s; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .btn-unlock-white:hover { background: var(--primary-light); color: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0,0,0,0.2); }
+  .btn-unlock-outline { display: inline-flex; align-items: center; gap: 0.5rem; background: transparent; color: white; padding: 13px 28px; border-radius: var(--radius-md); font-weight: 700; font-size: 0.97rem; border: 2px solid rgba(255,255,255,0.35); transition: all 0.25s; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .btn-unlock-outline:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.65); color: white; transform: translateY(-2px); }
+  @media (max-width: 575.98px) {
+    .unlock-ctas { flex-direction: column; }
+    .btn-unlock-white, .btn-unlock-outline { justify-content: center; }
+  }
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<!-- ══════════════════════════════════════════════
+     HERO
+══════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-blob-1"></div>
+  <div class="hero-blob-2"></div>
+  <div class="container hero-content">
+    <div class="row align-items-center g-5">
+
+      <!-- Left: Text -->
+      <div class="col-lg-6">
+        <div class="hero-live-pill anim-up d1">
+          <span class="live-dot"></span>
+          10,000+ students learning now
+        </div>
+        <h1 class="hero-title anim-up d2">
+          Master Your<br />Knowledge with<br />
+          <span class="highlight">QuizMaster</span>
+        </h1>
+        <p class="hero-subtitle anim-up d3">
+          Practice unlimited MCQ quizzes across multiple subjects and improve your exam performance with instant feedback.
+        </p>
+        <div class="hero-cta-group anim-up d4">
+          <a href="{% url 'register' %}" class="btn-primary-solid">
+            <i class="bi bi-play-circle-fill"></i>Start Practicing
+          </a>
+          <a href="{% url 'register' %}" class="btn-ghost">
+            <i class="bi bi-person-plus"></i>Create Free Account
+          </a>
+        </div>
+        <div class="hero-stats anim-up d5">
+          <div><div class="hero-stat-val">50K+</div><div class="hero-stat-lbl">Quiz Questions</div></div>
+          <div><div class="hero-stat-val">12+</div><div class="hero-stat-lbl">Subjects</div></div>
+          <div><div class="hero-stat-val">98%</div><div class="hero-stat-lbl">Satisfaction Rate</div></div>
+        </div>
+      </div>
+
+      <!-- Right: Visual -->
+      <div class="col-lg-6">
+        <div class="hero-visual-wrap anim-up d3">
+          <div class="float-badge float-badge-tl">
+            <i class="bi bi-trophy-fill" style="color:#f59e0b;font-size:1rem;"></i>
+            Rank #1 this week!
+          </div>
+          <div class="quiz-card-mockup">
+            <div class="qcard-top">
+              <span class="qcard-pill">📐 Mathematics</span>
+              <span class="qcard-count">Q 7 / 10</span>
+            </div>
+            <div class="qcard-q">What is the value of x if 3x + 9 = 24?</div>
+            <div class="qcard-option is-selected"><span class="qcard-option-key">A</span>x = 5</div>
+            <div class="qcard-option"><span class="qcard-option-key">B</span>x = 4</div>
+            <div class="qcard-option is-correct"><span class="qcard-option-key">C</span>x = 5 &nbsp;<i class="bi bi-check-circle-fill" style="font-size:0.85rem;"></i></div>
+            <div class="qcard-option"><span class="qcard-option-key">D</span>x = 7</div>
+            <div class="qcard-bar-wrap"><div class="qcard-bar-fill"></div></div>
+            <div class="qcard-footer">
+              <span class="qcard-footer-text">65% complete</span>
+              <button class="qcard-next-btn">Next →</button>
+            </div>
+          </div>
+          <div class="float-badge float-badge-br">
+            <i class="bi bi-graph-up-arrow" style="color:var(--secondary);font-size:1rem;"></i>
+            Score up 22% this month
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     FEATURES
+══════════════════════════════════════════════ -->
+<section class="features-section">
+  <div class="container">
+    <div class="text-center reveal">
+      <div class="eyebrow">Why QuizMaster?</div>
+      <h2 class="section-heading">Everything You Need to Excel</h2>
+      <p class="section-sub">Built specifically for students who want to study smarter, not harder.</p>
+    </div>
+    <div class="row g-4">
+      <div class="col-12 col-sm-6 col-lg-3 reveal">
+        <div class="feature-card">
+          <div class="feat-icon c-blue"><i class="bi bi-infinity"></i></div>
+          <h5>Unlimited MCQ Practice</h5>
+          <p>Access thousands of questions across all difficulty levels. No caps, no cooldowns — just pure practice.</p>
+        </div>
+      </div>
+      <div class="col-12 col-sm-6 col-lg-3 reveal">
+        <div class="feature-card">
+          <div class="feat-icon c-green"><i class="bi bi-grid-3x3-gap-fill"></i></div>
+          <h5>Multiple Subjects</h5>
+          <p>From Maths to Literature, choose from a wide variety of subjects aligned with your curriculum.</p>
+        </div>
+      </div>
+      <div class="col-12 col-sm-6 col-lg-3 reveal">
+        <div class="feature-card">
+          <div class="feat-icon c-indigo"><i class="bi bi-lightning-charge-fill"></i></div>
+          <h5>Instant Results</h5>
+          <p>Get immediate feedback after each answer with clear explanations to help you understand mistakes.</p>
+        </div>
+      </div>
+      <div class="col-12 col-sm-6 col-lg-3 reveal">
+        <div class="feature-card">
+          <div class="feat-icon c-amber"><i class="bi bi-bar-chart-line-fill"></i></div>
+          <h5>Track Your Progress</h5>
+          <p>Monitor your scores over time with detailed analytics and performance trends per subject.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     UNLOCK / CTA
+══════════════════════════════════════════════ -->
+<section class="unlock-section">
+  <div class="container unlock-inner text-center">
+    <div class="eyebrow reveal">Get Started Free</div>
+    <h2 class="section-heading mb-3 reveal" style="color:white;">Unlock the Full Quiz Experience</h2>
+    <p class="section-sub reveal">
+      Create a free account to unlock unlimited quizzes, track your results and improve your learning — no credit card required.
+    </p>
+    <div class="unlock-checklist reveal">
+      <div class="unlock-check"><i class="bi bi-check-circle-fill"></i> Unlimited Practice</div>
+      <div class="unlock-check"><i class="bi bi-check-circle-fill"></i> Instant Feedback</div>
+      <div class="unlock-check"><i class="bi bi-check-circle-fill"></i> Progress Reports</div>
+      <div class="unlock-check"><i class="bi bi-check-circle-fill"></i> All Subjects Included</div>
+      <div class="unlock-check"><i class="bi bi-check-circle-fill"></i> 100% Free</div>
+    </div>
+    <div class="d-flex gap-3 justify-content-center flex-wrap unlock-ctas reveal">
+      <a href="{% url 'login' %}" class="btn-unlock-outline">
+        <i class="bi bi-box-arrow-in-right"></i>Login
+      </a>
+      <a href="{% url 'register' %}" class="btn-unlock-white">
+        <i class="bi bi-rocket-takeoff-fill"></i>Register Free — It's Free!
+      </a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
