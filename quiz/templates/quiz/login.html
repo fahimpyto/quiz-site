@@ -6,8 +6,6 @@
 
 {% block extra_css %}
 <style>
-  /* Re-uses the shared .auth-* classes from register.html
-     — if you move these to base.html or a shared CSS file, delete this block */
   .auth-section {
     min-height: calc(100vh - 73px);
     display: flex; align-items: center;
@@ -77,7 +75,6 @@
 
   .field-error { font-size: 0.82rem; color: var(--danger); margin-top: 4px; font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif; }
 
-  /* Remember + Forgot row */
   .auth-meta-row {
     display: flex; align-items: center; justify-content: space-between;
     margin: 12px 0 20px; font-size: 0.85rem;
@@ -87,7 +84,6 @@
   .auth-forgot { color: var(--primary); font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.83rem; transition: color 0.2s; }
   .auth-forgot:hover { color: var(--primary-hover); }
 
-  /* Submit */
   .btn-auth-submit {
     height: 52px; background: linear-gradient(135deg, var(--primary), #3b82f6);
     color: #fff; border: none; border-radius: var(--radius-md);
@@ -107,7 +103,6 @@
   .auth-switch-link a { color: var(--primary); font-weight: 700; transition: color 0.2s; }
   .auth-switch-link a:hover { color: var(--primary-hover); }
 
-  /* Welcome back banner (shown when ?next= is present or after register) */
   .auth-welcome-banner {
     background: var(--secondary-light); color: var(--secondary-hover);
     border: 1px solid rgba(16,185,129,0.25); border-radius: var(--radius-md);
@@ -116,7 +111,6 @@
     display: flex; align-items: center; gap: 8px; margin-bottom: 20px;
   }
 
-  /* Trust / feature mini-cards below the form */
   .auth-trust-row {
     display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;
     margin-top: 18px; color: var(--text-muted); font-size: 0.78rem; font-weight: 600;
@@ -125,13 +119,12 @@
   }
   .auth-trust-row span { display: flex; align-items: center; gap: 5px; }
 
-  @keyframes authFadeUp { from{opacity:0;transform:translateY(18px);} to{opacity:1;transform:translateY(0);} }
+  @keyframes authFadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
 
-  /* Shake animation for wrong credentials */
   @keyframes shake {
-    0%,100%{transform:translateX(0);}
-    20%,60%{transform:translateX(-6px);}
-    40%,80%{transform:translateX(6px);}
+    0%,100% { transform: translateX(0); }
+    20%,60%  { transform: translateX(-6px); }
+    40%,80%  { transform: translateX(6px); }
   }
   .shake { animation: shake 0.4s ease; }
 </style>
@@ -158,7 +151,7 @@
         <!-- Card -->
         <div class="auth-card" id="loginCard">
 
-          <!-- Success message if redirected after registration -->
+          <!-- Success banner (e.g. redirected here after registration) -->
           {% if messages %}
             {% for message in messages %}
               {% if 'success' in message.tags %}
@@ -179,14 +172,19 @@
             <!-- Username or Email -->
             <div class="mb-3">
               <label for="id_username" class="auth-label">
-                <i class="bi bi-person-fill"></i>Username or Email
+                <i class="bi bi-person-fill"></i>Username
               </label>
               <div class="auth-input-wrap">
-                <input type="text" id="id_username" name="username"
-                       class="auth-input{% if form.errors %} is-invalid{% endif %}"
-                       placeholder="Your username or email"
-                       autocomplete="username" required
-                       value="{{ form.username.value|default:'' }}" />
+                <input
+                  type="text"
+                  id="id_username"
+                  name="username"
+                  class="auth-input"
+                  placeholder="Your username "
+                  autocomplete="username"
+                  required
+                  value="{{ request.POST.username|default:'' }}"
+                />
               </div>
             </div>
 
@@ -196,27 +194,31 @@
                 <i class="bi bi-lock-fill"></i>Password
               </label>
               <div class="auth-input-wrap">
-                <input type="password" id="id_password" name="password"
-                       class="auth-input{% if form.errors %} is-invalid{% endif %}"
-                       placeholder="Your password"
-                       autocomplete="current-password" required />
-                <button type="button" class="eye-toggle" id="togglePwd" aria-label="Toggle password">
+                <input
+                  type="password"
+                  id="id_password"
+                  name="password"
+                  class="auth-input"
+                  placeholder="Your password"
+                  autocomplete="current-password"
+                  required
+                />
+                <button type="button" class="eye-toggle" id="togglePwd" aria-label="Toggle password visibility">
                   <i class="bi bi-eye" id="eyeIcon"></i>
                 </button>
               </div>
             </div>
 
-            <!-- Form-level errors -->
-            {% if form.errors %}
+            <!-- Error message from backend -->
+            {% if error %}
             <div class="field-error mb-2" id="loginError">
-              <i class="bi bi-exclamation-circle me-1"></i>
-              Incorrect username/email or password. Please try again.
+              <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
             </div>
             {% else %}
             <div class="field-error mb-2 d-none" id="loginError"></div>
             {% endif %}
 
-            <!-- Remember + Forgot -->
+            <!-- Remember me + Forgot password -->
             <div class="auth-meta-row">
               <label class="auth-remember">
                 <input type="checkbox" name="remember" id="rememberMe" />
@@ -232,11 +234,12 @@
                 <span class="spinner-border spinner-border-sm me-2" role="status"></span>Logging in…
               </span>
             </button>
+
           </form>
 
           <div class="auth-divider"><span>don't have an account?</span></div>
 
-          <p class="auth-switch-link" style="margin-top:0;">
+          <p class="auth-switch-link" style="margin-top: 0;">
             <a href="{% url 'register' %}">
               <i class="bi bi-rocket-takeoff-fill me-1"></i>Create a free account
             </a>
@@ -265,29 +268,34 @@
 (function () {
   'use strict';
 
-  /* Password eye toggle */
+  /* ── Password eye toggle ─────────────────── */
   document.getElementById('togglePwd').addEventListener('click', function () {
     const inp  = document.getElementById('id_password');
     const icon = document.getElementById('eyeIcon');
-    const show = inp.type === 'password';
-    inp.type   = show ? 'text' : 'password';
-    icon.className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
+    const isPassword = inp.type === 'password';
+    inp.type       = isPassword ? 'text' : 'password';
+    icon.className = isPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
   });
 
-  /* Submit loading state */
+  /* ── Submit: show loading state ──────────── */
   document.getElementById('loginForm').addEventListener('submit', function () {
     const btn = document.getElementById('loginBtn');
     btn.disabled = true;
     document.getElementById('loginText').classList.add('d-none');
     document.getElementById('loginSpinner').classList.remove('d-none');
-    // Re-enable after 6s as safety fallback
-    setTimeout(() => { btn.disabled = false; }, 6000);
+    /* Safety fallback: re-enable after 6 s in case of network error */
+    setTimeout(() => {
+      btn.disabled = false;
+      document.getElementById('loginText').classList.remove('d-none');
+      document.getElementById('loginSpinner').classList.add('d-none');
+    }, 6000);
   });
 
-  /* Shake card if server returned errors */
-  {% if form.errors %}
+  /* ── Shake card on failed login ──────────── */
+  {% if error %}
   document.getElementById('loginCard').classList.add('shake');
   {% endif %}
+
 })();
 </script>
 {% endblock %}

@@ -1,0 +1,497 @@
+{% extends "quiz/base.html" %}
+{% load static %}
+
+{% block title %}Subjects – {{ class.name }} | QuizMaster{% endblock %}
+{% block meta_description %}Browse all subjects in {{ class.name }} and start practicing quizzes on QuizMaster.{% endblock %}
+
+{% block extra_css %}
+<style>
+
+  /* ════════════════════════════════════════
+     SHARED PAGE SHELL
+  ════════════════════════════════════════ */
+  .page-section {
+    padding: 44px 0 80px;
+    min-height: calc(100vh - 73px);
+  }
+
+  /* ── Breadcrumb ─────────────────────────── */
+  .qm-breadcrumb {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 28px;
+    animation: pgFadeUp 0.5s ease both;
+  }
+  .qm-breadcrumb a {
+    color: var(--text-muted);
+    transition: color 0.2s;
+  }
+  .qm-breadcrumb a:hover { color: var(--primary); }
+  .qm-breadcrumb .sep { font-size: 0.7rem; color: var(--border); }
+  .qm-breadcrumb .crumb-current { color: var(--text-soft); }
+
+  /* ── Page header ────────────────────────── */
+  .page-header {
+    margin-bottom: 36px;
+    animation: pgFadeUp 0.5s 0.05s ease both;
+  }
+  .page-header-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--primary-light);
+    color: var(--primary);
+    border: 1px solid var(--primary-mid);
+    border-radius: 100px;
+    padding: 4px 14px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .page-header-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: clamp(1.5rem, 3.5vw, 2rem);
+    font-weight: 800;
+    color: var(--text);
+    margin: 0 0 8px;
+    letter-spacing: -0.02em;
+  }
+  .page-header-sub {
+    color: var(--text-soft);
+    font-size: 0.95rem;
+    margin: 0;
+    line-height: 1.65;
+  }
+
+  /* ── Section label ──────────────────────── */
+  .section-label {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after {
+    content: ''; flex: 1;
+    height: 1px; background: var(--border);
+  }
+  .section-label i { color: var(--primary); }
+
+  /* ════════════════════════════════════════
+     SUBJECT CARDS
+  ════════════════════════════════════════ */
+
+  /* Staggered animation for grid items */
+  .subject-card-wrap { animation: pgFadeUp 0.5s ease both; }
+  .subject-card-wrap:nth-child(1)  { animation-delay: 0.10s; }
+  .subject-card-wrap:nth-child(2)  { animation-delay: 0.17s; }
+  .subject-card-wrap:nth-child(3)  { animation-delay: 0.24s; }
+  .subject-card-wrap:nth-child(4)  { animation-delay: 0.31s; }
+  .subject-card-wrap:nth-child(5)  { animation-delay: 0.38s; }
+  .subject-card-wrap:nth-child(6)  { animation-delay: 0.45s; }
+  .subject-card-wrap:nth-child(n+7){ animation-delay: 0.50s; }
+
+  .subject-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 0;
+    overflow: hidden;
+    text-decoration: none;
+    color: var(--text);
+    box-shadow: var(--shadow-card);
+    transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+  }
+
+  /* Gradient top accent */
+  .subject-card::before {
+    content: '';
+    display: block;
+    height: 4px;
+    background: var(--card-accent, linear-gradient(90deg, var(--primary), #3b82f6));
+    flex-shrink: 0;
+  }
+
+  .subject-card:hover {
+    border-color: var(--primary-mid);
+    transform: translateY(-6px) scale(1.01);
+    box-shadow: var(--shadow-hover);
+    color: var(--text);
+  }
+
+  .subject-card-body {
+    padding: 22px 22px 20px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 12px;
+  }
+
+  /* Icon */
+  .subject-icon-wrap {
+    width: 52px; height: 52px;
+    border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.35rem;
+    flex-shrink: 0;
+    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .subject-card:hover .subject-icon-wrap { transform: scale(1.15) rotate(-5deg); }
+
+  /* Icon palette — cycles through 8 colours */
+  .ic-blue    { background: rgba(37,99,235,0.10);   color: #2563EB; }
+  .ic-green   { background: rgba(16,185,129,0.10);  color: #10B981; }
+  .ic-indigo  { background: rgba(99,102,241,0.10);  color: #6366f1; }
+  .ic-amber   { background: rgba(245,158,11,0.10);  color: #d97706; }
+  .ic-rose    { background: rgba(244,63,94,0.10);   color: #e11d48; }
+  .ic-cyan    { background: rgba(6,182,212,0.10);   color: #0891b2; }
+  .ic-purple  { background: rgba(168,85,247,0.10);  color: #9333ea; }
+  .ic-teal    { background: rgba(20,184,166,0.10);  color: #0d9488; }
+
+  /* Accent line palette */
+  .ac-blue    { --card-accent: linear-gradient(90deg, #2563EB, #3b82f6); }
+  .ac-green   { --card-accent: linear-gradient(90deg, #10B981, #34d399); }
+  .ac-indigo  { --card-accent: linear-gradient(90deg, #6366f1, #818cf8); }
+  .ac-amber   { --card-accent: linear-gradient(90deg, #d97706, #fbbf24); }
+  .ac-rose    { --card-accent: linear-gradient(90deg, #e11d48, #fb7185); }
+  .ac-cyan    { --card-accent: linear-gradient(90deg, #0891b2, #22d3ee); }
+  .ac-purple  { --card-accent: linear-gradient(90deg, #9333ea, #c084fc); }
+  .ac-teal    { --card-accent: linear-gradient(90deg, #0d9488, #2dd4bf); }
+
+  .subject-name {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+
+  .subject-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--text-muted);
+    margin-top: auto;
+    transition: color 0.2s, gap 0.2s;
+  }
+  .subject-cta i { font-size: 0.72rem; transition: transform 0.2s; }
+  .subject-card:hover .subject-cta { color: var(--primary); gap: 8px; }
+  .subject-card:hover .subject-cta i { transform: translateX(3px); }
+
+  /* ════════════════════════════════════════
+     EMPTY STATE
+  ════════════════════════════════════════ */
+  .qm-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    background: white;
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius-xl);
+    animation: pgFadeUp 0.5s 0.1s ease both;
+  }
+  .qm-empty-icon {
+    width: 72px; height: 72px;
+    background: var(--primary-light);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem;
+    color: var(--primary);
+    margin-bottom: 18px;
+  }
+  .qm-empty-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .qm-empty-sub {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  /* ════════════════════════════════════════
+     SIDEBAR
+  ════════════════════════════════════════ */
+  .sidebar-card {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 26px;
+    box-shadow: var(--shadow-card);
+    position: relative;
+    overflow: hidden;
+    animation: pgFadeUp 0.5s 0.2s ease both;
+  }
+  .sidebar-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--secondary), #34d399, var(--primary));
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+
+  .sidebar-icon-wrap {
+    width: 44px; height: 44px;
+    background: rgba(16,185,129,0.10);
+    color: var(--secondary);
+    border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+    margin-bottom: 14px;
+  }
+  .sidebar-card-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+  .sidebar-card-body {
+    font-size: 0.86rem;
+    color: var(--text-soft);
+    line-height: 1.7;
+    margin: 0;
+  }
+  .sidebar-card-body strong { color: var(--text); }
+
+  /* Stat pill inside sidebar */
+  .sidebar-stat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    margin-top: 16px;
+  }
+  .sidebar-stat-icon {
+    width: 34px; height: 34px;
+    background: var(--primary-light);
+    color: var(--primary);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+  }
+  .sidebar-stat-val {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.1rem; font-weight: 800; color: var(--text); line-height: 1;
+  }
+  .sidebar-stat-lbl {
+    font-size: 0.73rem; color: var(--text-muted); font-weight: 600; margin-top: 2px;
+  }
+
+  /* Back link */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    transition: color 0.2s;
+    margin-bottom: 20px;
+  }
+  .back-link:hover { color: var(--primary); }
+
+  /* ════════════════════════════════════════
+     ANIMATION
+  ════════════════════════════════════════ */
+  @keyframes pgFadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Mobile */
+  @media (max-width: 575.98px) {
+    .page-section { padding: 32px 0 60px; }
+  }
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<section class="page-section">
+  <div class="container">
+
+    <!-- Back link -->
+    <a href="{% url 'dashboard' %}" class="back-link">
+      <i class="bi bi-arrow-left"></i>Back to Dashboard
+    </a>
+
+    <!-- Breadcrumb -->
+    <nav class="qm-breadcrumb" aria-label="breadcrumb">
+      <a href="{% url 'dashboard' %}"><i class="bi bi-house-fill me-1"></i>Dashboard</a>
+      <span class="sep"><i class="bi bi-chevron-right"></i></span>
+      <a href="/class/{{ class.id }}/">{{ class.name }}</a>
+      <span class="sep"><i class="bi bi-chevron-right"></i></span>
+      <span class="crumb-current">Subjects</span>
+    </nav>
+
+    <div class="row g-4">
+
+      <!-- ═══════════════════════════════════
+           LEFT: main content
+      ═══════════════════════════════════ -->
+      <div class="col-12 col-lg-8">
+
+        <!-- Page header -->
+        <div class="page-header">
+          <div class="page-header-eyebrow">
+            <i class="bi bi-collection-fill"></i>
+            {{ class.name }}
+          </div>
+          <h1 class="page-header-title">Subjects – {{ class.name }}</h1>
+          <p class="page-header-sub">Choose a subject to start practicing quizzes.</p>
+        </div>
+
+        <!-- Section label -->
+        <div class="section-label">
+          <i class="bi bi-grid-3x3-gap-fill"></i>
+          All Subjects
+        </div>
+
+        <!-- Subject cards grid -->
+        {% if subjects %}
+
+          <div class="row g-3">
+            {% for subject in subjects %}
+            <div class="col-12 col-sm-6 col-xl-3 subject-card-wrap">
+              <a href="{% url 'quizzes' subject.id %}" class="subject-card subject-card-item" data-index="{{ forloop.counter0 }}">
+                <div class="subject-card-body">
+                  <div class="subject-icon-wrap subject-icon-item"></div>
+                  <p class="subject-name">{{ subject.name }}</p>
+                  <span class="subject-cta">
+                    Start practicing <i class="bi bi-arrow-right"></i>
+                  </span>
+                </div>
+              </a>
+            </div>
+            {% endfor %}
+          </div>
+
+        {% else %}
+
+          <!-- Empty state -->
+          <div class="qm-empty">
+            <div class="qm-empty-icon"><i class="bi bi-inbox"></i></div>
+            <p class="qm-empty-title">No subjects available yet</p>
+            <p class="qm-empty-sub">New subjects will be added soon.</p>
+          </div>
+
+        {% endif %}
+
+      </div>
+
+      <!-- ═══════════════════════════════════
+           RIGHT: sidebar
+      ═══════════════════════════════════ -->
+      <div class="col-12 col-lg-4">
+
+        <!-- Study Tip card -->
+        <div class="sidebar-card mb-3">
+          <div class="sidebar-icon-wrap"><i class="bi bi-lightbulb-fill"></i></div>
+          <h3 class="sidebar-card-title">Study Tip</h3>
+          <p class="sidebar-card-body">
+            Practicing <strong>small quizzes every day</strong> improves long-term
+            retention by up to <strong>40%</strong>. Pick one subject now and answer
+            just 10 questions — it only takes 5 minutes!
+          </p>
+          <div class="sidebar-stat">
+            <div class="sidebar-stat-icon"><i class="bi bi-collection-fill"></i></div>
+            <div>
+              <div class="sidebar-stat-val">{{ subjects|length }}</div>
+              <div class="sidebar-stat-lbl">Subjects in {{ class.name }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick nav card -->
+        <div class="sidebar-card">
+          <div class="sidebar-icon-wrap" style="background:rgba(37,99,235,0.10);color:var(--primary);">
+            <i class="bi bi-compass-fill"></i>
+          </div>
+          <h3 class="sidebar-card-title">Quick Navigation</h3>
+          <p class="sidebar-card-body mb-3">Jump back to the dashboard or explore another class.</p>
+          <a href="{% url 'dashboard' %}" class="d-flex align-items-center gap-2"
+             style="font-size:0.85rem;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;color:var(--primary);">
+            <i class="bi bi-house-fill"></i> Go to Dashboard
+          </a>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+(function () {
+  'use strict';
+
+  /* Colour palette: [iconClass, iconBgClass, accentClass] */
+  const PALETTE = [
+    ['bi-calculator-fill',   'ic-blue',   'ac-blue'],
+    ['bi-book-fill',         'ic-green',  'ac-green'],
+    ['bi-globe2',            'ic-indigo', 'ac-indigo'],
+    ['bi-flask-fill',        'ic-amber',  'ac-amber'],
+    ['bi-music-note-beamed', 'ic-rose',   'ac-rose'],
+    ['bi-brush-fill',        'ic-cyan',   'ac-cyan'],
+    ['bi-cpu-fill',          'ic-purple', 'ac-purple'],
+    ['bi-translate',         'ic-teal',   'ac-teal'],
+  ];
+
+  document.querySelectorAll('.subject-card-item').forEach((card, i) => {
+    const [iconCls, bgCls, accentCls] = PALETTE[i % PALETTE.length];
+
+    /* Apply accent gradient top-bar class */
+    card.classList.add(accentCls);
+
+    /* Apply icon */
+    const iconWrap = card.querySelector('.subject-icon-item');
+    if (iconWrap) {
+      iconWrap.classList.add(bgCls);
+      iconWrap.innerHTML = `<i class="bi ${iconCls}"></i>`;
+    }
+  });
+})();
+</script>
+{% endblock %}

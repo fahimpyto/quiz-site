@@ -1,0 +1,219 @@
+{% extends "quiz/base.html" %}
+{% load static %}
+
+{% block title %}{{ quiz.title }}{% endblock %}
+
+{% block content %}
+
+<div class="container" style="max-width:900px;margin:auto;padding:30px 20px;">
+
+  <h2 style="margin-bottom:20px;">⚡ {{ quiz.title }}</h2>
+
+  <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+    <div><b id="progress">0 / {{ questions|length }}</b> answered</div>
+    <div><b id="timer">--:--</b></div>
+  </div>
+
+  <div style="height:6px;background:#eee;border-radius:10px;margin-bottom:25px;">
+    <div id="progressBar" style="height:6px;background:#2563eb;width:0%;border-radius:10px;"></div>
+  </div>
+
+  <form id="quizForm">
+
+    {% for q in questions %}
+
+    <div class="question-card">
+
+      <p class="question-text">
+        <b>Q{{ forloop.counter }}.</b> {{ q.text }}
+      </p>
+
+      <div class="options">
+
+        {% for opt in q.options %}
+
+        <label class="option">
+
+          <input
+            type="radio"
+            name="q{{ forloop.parentloop.counter }}"
+            value="{{ forloop.counter0 }}"
+            onclick="lockQuestion(this)"
+          >
+
+          <span>{{ opt }}</span>
+
+        </label>
+
+        {% endfor %}
+
+      </div>
+
+    </div>
+
+    {% endfor %}
+
+    <button type="button" class="submit-btn" onclick="submitQuiz()">
+      Submit Quiz
+    </button>
+
+  </form>
+
+</div>
+
+
+<style>
+  .question-card {
+    background: #fff;
+    padding: 20px;
+    margin-bottom: 18px;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+  }
+
+  .question-text {
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .option {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .option:hover {
+    background: #f9fafb;
+  }
+
+  .option.selected {
+    background: #2563eb;
+    color: white;
+    border-color: #2563eb;
+  }
+
+  .submit-btn {
+    margin-top: 25px;
+    width: 100%;
+    height: 44px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  
+  .submit-btn:hover {
+    background: #1d4ed8;
+  }
+</style>
+
+
+<script>
+  
+  let answered = 0;
+  const total = {{ questions|length }};
+
+  function lockQuestion(input) {
+    const container = input.closest(".question-card");
+
+    if (container.dataset.locked) return;
+
+    container.dataset.locked = "true";
+
+    const options = container.querySelectorAll("input");
+    options.forEach(o => o.disabled = true);
+
+    input.parentElement.classList.add("selected");
+
+    answered++;
+
+    document.getElementById("progress").innerText =
+      answered + " / " + total + " answered";
+
+    document.getElementById("progressBar").style.width =
+      (answered / total * 100) + "%";
+  }
+
+
+  let duration = {{ duration }} * 60;
+  const timerEl = document.getElementById("timer");
+
+  function updateTimer() {
+    let m = Math.floor(duration / 60);
+    let s = duration % 60;
+
+    timerEl.innerText =
+      String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+
+    if (duration <= 0) {
+      submitQuiz();
+      return;
+    }
+
+    duration--;
+  }
+
+  updateTimer();
+  setInterval(updateTimer, 1000);
+
+
+  // ✅ FIXED: Submit Function with Fetch API
+  function submitQuiz() {
+    
+    // 1. Collect answers
+    let answers = {};
+
+    document.querySelectorAll("input[type=radio]:checked").forEach(el => {
+      let q = el.name.replace("q", "");
+      answers[q] = el.value;
+    });
+
+    // 2. Disable button to prevent double click
+    const btn = document.querySelector('.submit-btn');
+    if(btn) {
+      btn.innerText = "Submitting...";
+      btn.disabled = true;
+    }
+
+    // 3. Send data to backend
+    fetch("/quiz/{{ quiz.id }}/submit/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": "{{ csrf_token }}"
+      },
+      body: JSON.stringify(answers)
+    })
+    .then(res => res.json())
+    .then(data => {
+      // 4. Store result in localStorage (optional, based on your snippet)
+      localStorage.setItem("quiz_result", JSON.stringify(data));
+
+      // 5. Redirect to result page
+      window.location.href = "/quiz/{{ quiz.id }}/result/";
+    })
+    .catch(err => {
+      console.error("Error:", err);
+      alert("Failed to submit quiz. Please try again.");
+      if(btn) {
+        btn.innerText = "Submit Quiz";
+        btn.disabled = false;
+      }
+    });
+  }
+
+</script>
+
+{% endblock %}

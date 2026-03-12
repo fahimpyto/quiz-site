@@ -1,0 +1,851 @@
+{% extends "quiz/base.html" %}
+{% load static %}
+
+{% block title %}{{ subject.name }} Quizzes | QuizMaster{% endblock %}
+{% block meta_description %}Browse quizzes in {{ subject.name }} and test your knowledge on QuizMaster.{% endblock %}
+
+{% block extra_css %}
+<style>
+
+  /* ════════════════════════════════════════
+     SHARED PAGE SHELL
+  ════════════════════════════════════════ */
+  .page-section {
+    padding: 44px 0 80px;
+    min-height: calc(100vh - 73px);
+  }
+
+  /* ── Breadcrumb ─────────────────────────── */
+  .qm-breadcrumb {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 28px;
+    animation: pgFadeUp 0.5s ease both;
+  }
+  .qm-breadcrumb a { color: var(--text-muted); transition: color 0.2s; }
+  .qm-breadcrumb a:hover { color: var(--primary); }
+  .qm-breadcrumb .sep { font-size: 0.7rem; color: var(--border); }
+  .qm-breadcrumb .crumb-current { color: var(--text-soft); }
+
+  /* ── Back link ──────────────────────────── */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    transition: color 0.2s;
+    margin-bottom: 20px;
+  }
+  .back-link:hover { color: var(--primary); }
+
+  /* ── Page header ────────────────────────── */
+  .page-header {
+    margin-bottom: 36px;
+    animation: pgFadeUp 0.5s 0.05s ease both;
+  }
+  .page-header-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--primary-light);
+    color: var(--primary);
+    border: 1px solid var(--primary-mid);
+    border-radius: 100px;
+    padding: 4px 14px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .page-header-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: clamp(1.5rem, 3.5vw, 2rem);
+    font-weight: 800;
+    color: var(--text);
+    margin: 0 0 8px;
+    letter-spacing: -0.02em;
+  }
+  .page-header-sub {
+    color: var(--text-soft);
+    font-size: 0.95rem;
+    margin: 0;
+    line-height: 1.65;
+  }
+
+  /* ── Section label ──────────────────────── */
+  .section-label {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .section-label i { color: var(--primary); }
+
+  /* ════════════════════════════════════════
+     QUIZ CARDS
+  ════════════════════════════════════════ */
+  .quiz-card-wrap { animation: pgFadeUp 0.5s ease both; }
+  .quiz-card-wrap:nth-child(1)  { animation-delay: 0.10s; }
+  .quiz-card-wrap:nth-child(2)  { animation-delay: 0.17s; }
+  .quiz-card-wrap:nth-child(3)  { animation-delay: 0.24s; }
+  .quiz-card-wrap:nth-child(4)  { animation-delay: 0.31s; }
+  .quiz-card-wrap:nth-child(5)  { animation-delay: 0.38s; }
+  .quiz-card-wrap:nth-child(6)  { animation-delay: 0.45s; }
+  .quiz-card-wrap:nth-child(n+7){ animation-delay: 0.50s; }
+
+  .quiz-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+    transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+  }
+  .quiz-card::before {
+    content: '';
+    display: block;
+    height: 4px;
+    background: var(--qcard-accent, linear-gradient(90deg, var(--primary), #3b82f6));
+    flex-shrink: 0;
+  }
+  .quiz-card:hover {
+    border-color: var(--primary-mid);
+    transform: translateY(-6px) scale(1.01);
+    box-shadow: var(--shadow-hover);
+  }
+  .quiz-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-xl);
+    background: linear-gradient(140deg, rgba(37,99,235,0.03) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.28s;
+    pointer-events: none;
+  }
+  .quiz-card:hover::after { opacity: 1; }
+
+  .quiz-card-body {
+    padding: 22px 22px 16px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 10px;
+    position: relative;
+    z-index: 1;
+  }
+  .quiz-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .quiz-icon-wrap {
+    width: 50px; height: 50px;
+    border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .quiz-card:hover .quiz-icon-wrap { transform: scale(1.15) rotate(-4deg); }
+
+  .quiz-q-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--primary-light);
+    color: var(--primary);
+    border: 1px solid var(--primary-mid);
+    border-radius: 100px;
+    padding: 3px 10px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .quiz-card-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.97rem;
+    font-weight: 800;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.01em;
+    line-height: 1.35;
+  }
+
+  /* ✅ FIX: Meta row — questions count + time */
+  .quiz-meta-row {
+    display: flex;
+    gap: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    align-items: center;
+    margin-top: 2px;
+  }
+  .quiz-meta-row span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .quiz-meta-row i { font-size: 0.75rem; }
+
+  .quiz-card-desc {
+    font-size: 0.82rem;
+    color: var(--text-soft);
+    margin: 0;
+    line-height: 1.6;
+    flex: 1;
+  }
+  .quiz-card-footer {
+    padding: 0 22px 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ✅ FIX: Start Quiz button — works as button (for popup) */
+  .btn-start-quiz {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    width: 100%;
+    height: 42px;
+    background: var(--primary-light);
+    color: var(--primary);
+    border: 1.5px solid var(--primary-mid);
+    border-radius: var(--radius-md);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.22s;
+  }
+  .btn-start-quiz:hover,
+  .quiz-card:hover .btn-start-quiz {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    box-shadow: 0 4px 14px rgba(37,99,235,0.28);
+    transform: translateY(-1px);
+  }
+  .btn-start-quiz i { font-size: 0.8rem; transition: transform 0.2s; }
+  .quiz-card:hover .btn-start-quiz i:last-child { transform: translateX(3px); }
+
+  /* Icon colour palettes */
+  .ic-blue    { background: rgba(37,99,235,0.10);   color: #2563EB; }
+  .ic-green   { background: rgba(16,185,129,0.10);  color: #10B981; }
+  .ic-indigo  { background: rgba(99,102,241,0.10);  color: #6366f1; }
+  .ic-amber   { background: rgba(245,158,11,0.10);  color: #d97706; }
+  .ic-rose    { background: rgba(244,63,94,0.10);   color: #e11d48; }
+  .ic-cyan    { background: rgba(6,182,212,0.10);   color: #0891b2; }
+  .ic-purple  { background: rgba(168,85,247,0.10);  color: #9333ea; }
+  .ic-teal    { background: rgba(20,184,166,0.10);  color: #0d9488; }
+
+  /* ════════════════════════════════════════
+     EMPTY STATE
+  ════════════════════════════════════════ */
+  .qm-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    background: white;
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius-xl);
+    animation: pgFadeUp 0.5s 0.1s ease both;
+  }
+  .qm-empty-icon {
+    width: 72px; height: 72px;
+    background: var(--primary-light);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem; color: var(--primary);
+    margin-bottom: 18px;
+  }
+  .qm-empty-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.1rem; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+  .qm-empty-sub   { font-size: 0.88rem; color: var(--text-muted); margin: 0; }
+
+  /* ════════════════════════════════════════
+     SIDEBAR
+  ════════════════════════════════════════ */
+  .sidebar-card {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 26px;
+    box-shadow: var(--shadow-card);
+    position: relative;
+    overflow: hidden;
+    animation: pgFadeUp 0.5s 0.2s ease both;
+  }
+  .sidebar-card-pro {
+    background: linear-gradient(135deg, #0f2d6e 0%, #1d4ed8 55%, var(--primary) 100%);
+    border-color: transparent;
+    color: white;
+  }
+  .sidebar-card-pro::before {
+    content: '';
+    position: absolute;
+    top: -70px; right: -70px;
+    width: 220px; height: 220px;
+    background: radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .pro-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.85);
+    border-radius: 100px;
+    padding: 4px 12px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .sidebar-card-pro .sidebar-card-title { color: white; }
+  .sidebar-card-pro .sidebar-card-body  { color: rgba(255,255,255,0.72); }
+  .sidebar-card-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.97rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+    position: relative; z-index: 1;
+  }
+  .sidebar-card-body {
+    font-size: 0.85rem;
+    line-height: 1.7;
+    margin: 0;
+    position: relative; z-index: 1;
+  }
+  .btn-sidebar {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: white;
+    color: var(--primary);
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 9px 18px;
+    font-weight: 800;
+    font-size: 0.82rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    text-decoration: none;
+    margin-top: 16px;
+    transition: all 0.2s;
+    position: relative; z-index: 1;
+  }
+  .btn-sidebar:hover {
+    background: var(--primary-light);
+    color: var(--primary-hover);
+    transform: translateY(-1px);
+  }
+  .sidebar-card-light::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--secondary), #34d399);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+  .sidebar-progress-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+  .sidebar-progress-bar-bg {
+    background: var(--bg);
+    border-radius: 100px;
+    height: 8px;
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .sidebar-progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--secondary), #34d399);
+    border-radius: 100px;
+    width: 0%;
+    transition: width 1.2s cubic-bezier(0.22,1,0.36,1);
+  }
+  .sidebar-stat-mini {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: var(--text-soft);
+    font-weight: 600;
+  }
+  .sidebar-stat-mini i { color: var(--primary); }
+
+  /* ════════════════════════════════════════
+     ✅ FIX 3: QUIZ POPUP
+  ════════════════════════════════════════ */
+  .quiz-popup {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 1.5rem;
+  }
+  .quiz-popup.open { display: flex; }
+
+  .quiz-popup-box {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: 2rem 1.75rem;
+    width: 100%;
+    max-width: 380px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(37,99,235,0.18);
+    animation: popIn 0.28s cubic-bezier(0.22,1,0.36,1);
+    position: relative;
+  }
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.93) translateY(16px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .popup-emoji { font-size: 2.4rem; margin-bottom: 0.5rem; }
+
+  .popup-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--text);
+    margin-bottom: 1rem;
+    line-height: 1.3;
+  }
+
+  .popup-meta {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .popup-meta-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .popup-meta-value {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    font-size: 1.3rem;
+    color: var(--primary);
+    line-height: 1;
+  }
+  .popup-meta-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .popup-divider {
+    width: 1px;
+    height: 40px;
+    background: var(--border);
+    align-self: center;
+  }
+
+  .popup-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  .popup-btn-start {
+    flex: 1;
+    height: 42px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: var(--shadow-btn);
+  }
+  .popup-btn-start:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37,99,235,.35);
+  }
+  .popup-btn-cancel {
+    height: 42px;
+    padding: 0 18px;
+    background: transparent;
+    color: var(--text-soft);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .popup-btn-cancel:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* ════════════════════════════════════════
+     ANIMATION
+  ════════════════════════════════════════ */
+  @keyframes pgFadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 575.98px) {
+    .page-section { padding: 32px 0 60px; }
+  }
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<section class="page-section">
+  <div class="container">
+
+    <!-- Back link -->
+    <a href="/class/{{ class.id }}/" class="back-link">
+      <i class="bi bi-arrow-left"></i>Back to Subjects
+    </a>
+
+    <!-- Breadcrumb -->
+    <nav class="qm-breadcrumb" aria-label="breadcrumb">
+      <a href="{% url 'dashboard' %}"><i class="bi bi-house-fill me-1"></i>Dashboard</a>
+      <span class="sep"><i class="bi bi-chevron-right"></i></span>
+      <a href="/class/{{ class.id }}/">{{ class.name }}</a>
+      <span class="sep"><i class="bi bi-chevron-right"></i></span>
+      <a href="/subject/{{ subject.id }}/">{{ subject.name }}</a>
+      <span class="sep"><i class="bi bi-chevron-right"></i></span>
+      <span class="crumb-current">Quizzes</span>
+    </nav>
+
+    <div class="row g-4">
+
+      <!-- ═══════════════════════════════════
+           LEFT: main content
+      ═══════════════════════════════════ -->
+      <div class="col-12 col-lg-8">
+
+        <!-- Page header -->
+        <div class="page-header">
+          <div class="page-header-eyebrow">
+            <i class="bi bi-patch-question-fill"></i>
+            {{ subject.name }}
+          </div>
+          <h1 class="page-header-title">{{ subject.name }} Quizzes</h1>
+          <p class="page-header-sub">Select a quiz and test your knowledge.</p>
+        </div>
+
+        <!-- Section label -->
+        <div class="section-label">
+          <i class="bi bi-list-ul"></i>
+          Available Quizzes
+          {% if quizzes %}
+            <span style="font-size:0.72rem;background:var(--primary-light);color:var(--primary);border:1px solid var(--primary-mid);border-radius:100px;padding:2px 10px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;">
+              {{ quizzes|length }}
+            </span>
+          {% endif %}
+        </div>
+
+        <!-- ✅ FIX 1: Quiz cards with question_count|default:0 and duration_minutes|default:5 -->
+        {% if quizzes %}
+          <div class="row g-3">
+            {% for quiz in quizzes %}
+            <div class="col-12 col-sm-6 quiz-card-wrap">
+
+              <div class="quiz-card quiz-card-item" data-index="{{ forloop.counter0 }}">
+                <div class="quiz-card-body">
+
+                  <div class="quiz-card-top">
+                    <div class="quiz-icon-wrap quiz-icon-item"></div>
+                    {# ✅ FIX 1: always show badge with |default:0 fallback #}
+                    <span class="quiz-q-badge">
+                      <i class="bi bi-patch-question-fill"></i>
+                      {{ quiz.question_count|default:0 }} Qs
+                    </span>
+                  </div>
+
+                  <p class="quiz-card-title">{{ quiz.title }}</p>
+
+                  {# ✅ FIX 1: Meta row — question count + time with fallbacks #}
+                  <div class="quiz-meta-row">
+                    <span>
+                      <i class="bi bi-patch-question"></i>
+                      {{ quiz.question_count|default:0 }} Questions
+                    </span>
+                    <span>
+                      <i class="bi bi-clock"></i>
+                      {{ quiz.duration_minutes|default:5 }} min
+                    </span>
+                  </div>
+
+                  <p class="quiz-card-desc">
+                    {% if quiz.description %}
+                      {{ quiz.description|truncatewords:18 }}
+                    {% else %}
+                      Test your knowledge on {{ subject.name }}.
+                    {% endif %}
+                  </p>
+
+                </div>
+
+                <div class="quiz-card-footer">
+                  {# ✅ FIX 2: button with data-* attrs for popup — NOT direct <a> link #}
+                  <button
+                    class="btn-start-quiz startQuizBtn"
+                    data-id="{{ quiz.id }}"
+                    data-title="{{ quiz.title }}"
+                    data-questions="{{ quiz.question_count|default:0 }}"
+                    data-time="{{ quiz.duration_minutes|default:5 }}"
+                  >
+                    <i class="bi bi-play-fill"></i>
+                    Start Quiz
+                    <i class="bi bi-arrow-right"></i>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+            {% endfor %}
+          </div>
+
+        {% else %}
+
+          <!-- Empty state -->
+          <div class="qm-empty">
+            <div class="qm-empty-icon"><i class="bi bi-clipboard-x"></i></div>
+            <p class="qm-empty-title">No quizzes available yet</p>
+            <p class="qm-empty-sub">New quizzes will be added soon.</p>
+          </div>
+
+        {% endif %}
+
+      </div>
+
+      <!-- ═══════════════════════════════════
+           RIGHT: sidebar
+      ═══════════════════════════════════ -->
+      <div class="col-12 col-lg-4">
+
+        <!-- Pro Tip card (dark) -->
+        <div class="sidebar-card sidebar-card-pro mb-3">
+          <div class="pro-badge">
+            <i class="bi bi-star-fill"></i> Pro Tip
+          </div>
+          <h3 class="sidebar-card-title">Short quizzes = better memory</h3>
+          <p class="sidebar-card-body">
+            Taking short quizzes immediately after studying boosts
+            <strong style="color:white;">long-term memory retention</strong> by
+            up to 50%. Don't just read — practice!
+          </p>
+          <a href="#" class="btn-sidebar" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">
+            <i class="bi bi-lightning-fill"></i>Start Now
+          </a>
+        </div>
+
+        <!-- Progress / stats card -->
+        <div class="sidebar-card sidebar-card-light">
+          <h3 class="sidebar-card-title">Your Progress</h3>
+
+          <div class="sidebar-progress-row">
+            <span style="color:var(--text-soft);">Completion</span>
+            <span style="color:var(--secondary);">{{ quizzes_completed|default:"0" }} / {{ quizzes|length }}</span>
+          </div>
+          <div class="sidebar-progress-bar-bg">
+            <div class="sidebar-progress-bar-fill" id="progressFill"
+                 data-target="{% if quizzes %}{% widthratio quizzes_completed|default:0 quizzes|length 100 %}{% else %}0{% endif %}">
+            </div>
+          </div>
+
+          <div class="d-flex flex-column gap-2">
+            <div class="sidebar-stat-mini">
+              <i class="bi bi-collection-fill"></i>
+              {{ quizzes|length }} quiz{{ quizzes|length|pluralize:"zes" }} in {{ subject.name }}
+            </div>
+            <div class="sidebar-stat-mini">
+              <i class="bi bi-check2-circle"></i>
+              {{ quizzes_completed|default:"0" }} completed
+            </div>
+            <div class="sidebar-stat-mini">
+              <i class="bi bi-clock-history"></i>
+              ~{{ avg_duration|default:"5" }} min per quiz
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+{# ✅ FIX 2: Quiz Confirmation Popup #}
+<div class="quiz-popup" id="quizPopup">
+  <div class="quiz-popup-box">
+    <div class="popup-emoji">🚀</div>
+    <p class="popup-title" id="popupTitle">Quiz Title</p>
+
+    <div class="popup-meta">
+      <div class="popup-meta-item">
+        <span class="popup-meta-value" id="popupQuestions">0</span>
+        <span class="popup-meta-label">Questions</span>
+      </div>
+      <div class="popup-divider"></div>
+      <div class="popup-meta-item">
+        <span class="popup-meta-value" id="popupTime">0</span>
+        <span class="popup-meta-label">Minutes</span>
+      </div>
+    </div>
+
+    <div class="popup-actions">
+      <button class="popup-btn-start" id="popupStart">
+        <i class="bi bi-play-fill"></i> Start Quiz
+      </button>
+      <button class="popup-btn-cancel" id="popupCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+(function () {
+  'use strict';
+
+  /* ── ✅ FIX 4: Quiz card colour palette ──── */
+  const PALETTE = [
+    ['bi-mortarboard-fill',   'ic-blue',   'linear-gradient(90deg,#2563EB,#3b82f6)'],
+    ['bi-book-fill',          'ic-indigo', 'linear-gradient(90deg,#6366f1,#818cf8)'],
+    ['bi-flask-fill',         'ic-green',  'linear-gradient(90deg,#10B981,#34d399)'],
+    ['bi-calculator-fill',    'ic-amber',  'linear-gradient(90deg,#d97706,#fbbf24)'],
+    ['bi-globe2',             'ic-cyan',   'linear-gradient(90deg,#0891b2,#22d3ee)'],
+    ['bi-lightbulb-fill',     'ic-rose',   'linear-gradient(90deg,#e11d48,#fb7185)'],
+    ['bi-cpu-fill',           'ic-purple', 'linear-gradient(90deg,#9333ea,#c084fc)'],
+    ['bi-patch-question-fill','ic-teal',   'linear-gradient(90deg,#0d9488,#2dd4bf)'],
+  ];
+
+  document.querySelectorAll('.quiz-card-item').forEach((card, i) => {
+    const [iconCls, bgCls, gradient] = PALETTE[i % PALETTE.length];
+    card.style.setProperty('--qcard-accent', gradient);
+    const iconWrap = card.querySelector('.quiz-icon-item');
+    if (iconWrap) {
+      iconWrap.classList.add(bgCls);
+      iconWrap.innerHTML = `<i class="bi ${iconCls}"></i>`;
+    }
+  });
+
+  /* ── ✅ FIX 4: Popup logic ──────────────── */
+  const popup     = document.getElementById('quizPopup');
+  const popTitle  = document.getElementById('popupTitle');
+  const popQs     = document.getElementById('popupQuestions');
+  const popTime   = document.getElementById('popupTime');
+  const popStart  = document.getElementById('popupStart');
+  const popCancel = document.getElementById('popupCancel');
+
+  let currentQuizId = null;
+
+  // Open popup when any Start Quiz button is clicked
+  document.querySelectorAll('.startQuizBtn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      currentQuizId       = this.dataset.id;
+      popTitle.textContent = this.dataset.title;
+      popQs.textContent    = this.dataset.questions;
+      popTime.textContent  = this.dataset.time;
+      popup.classList.add('open');
+    });
+  });
+
+  // Cancel — close popup
+  popCancel.addEventListener('click', () => {
+    popup.classList.remove('open');
+    currentQuizId = null;
+  });
+
+  // Click outside popup box — close
+  popup.addEventListener('click', function (e) {
+    if (e.target === popup) {
+      popup.classList.remove('open');
+      currentQuizId = null;
+    }
+  });
+
+  // Escape key — close
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      popup.classList.remove('open');
+      currentQuizId = null;
+    }
+  });
+
+  // ✅ Start — navigate to take-quiz URL
+  popStart.addEventListener('click', () => {
+    if (currentQuizId) {
+      window.location.href = '/quiz/' + currentQuizId + '/take/';
+    }
+  });
+
+  /* ── Animate progress bar ──────────────── */
+  const fill = document.getElementById('progressFill');
+  if (fill) {
+    const target = parseInt(fill.dataset.target || '0', 10);
+    requestAnimationFrame(() => {
+      setTimeout(() => { fill.style.width = target + '%'; }, 200);
+    });
+  }
+
+})();
+</script>
+{% endblock %}

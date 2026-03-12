@@ -1,0 +1,197 @@
+হ্যাঁ 👍 এখন তুমি ঠিক জায়গায় এসেছ।
+Next step হলো **Class → Subject page** বানানো।
+
+Flow হবে:
+
+```
+Dashboard
+   ↓
+Class click
+   ↓
+Subject page
+   ↓
+Quiz list
+   ↓
+Start Quiz
+```
+
+এখন আমরা **Class → Subject URL + View + HTML** বানাবো।
+
+---
+
+# 1️⃣ URL add করতে হবে
+
+`urls.py`
+
+```python
+from . import views
+
+urlpatterns = [
+    path("class/<int:class_id>/", views.subjects, name="subjects"),
+]
+```
+
+মানে URL হবে:
+
+```
+/class/1/
+/class/2/
+/class/3/
+```
+
+---
+
+# 2️⃣ View function বানাতে হবে
+
+`views.py`
+
+```python
+from .models import Subject, Class
+
+def subjects(request, class_id):
+
+    class_obj = Class.objects.get(id=class_id)
+
+    subjects = Subject.objects.filter(class_name=class_obj)
+
+    return render(request, "quiz/subjects.html", {
+        "class": class_obj,
+        "subjects": subjects
+    })
+```
+
+এখানে আমরা:
+
+```
+Class → Subjects
+```
+
+fetch করছি।
+
+---
+
+# 3️⃣ Dashboard এ class click URL
+
+`dashboard.html`
+
+Class card এ এই link দিতে হবে:
+
+```html
+<a href="{% url 'subjects' c.id %}">
+```
+
+Example:
+
+```html
+{% for c in classes %}
+
+<a href="{% url 'subjects' c.id %}" class="class-card">
+    {{ c.name }}
+</a>
+
+{% endfor %}
+```
+
+---
+
+# 4️⃣ Subject page HTML
+
+Create file:
+
+```
+templates/quiz/subjects.html
+```
+
+Example:
+
+```html
+{% extends "quiz/base.html" %}
+
+{% block content %}
+
+<div class="container mt-5">
+
+<h3>Subjects for {{ class.name }}</h3>
+
+<div class="row">
+
+{% if subjects %}
+
+    {% for s in subjects %}
+
+    <div class="col-md-3 mb-3">
+
+        <a href="/subject/{{ s.id }}/" class="card p-3 text-center">
+
+            <h5>{{ s.name }}</h5>
+
+        </a>
+
+    </div>
+
+    {% endfor %}
+
+{% else %}
+
+<p>No subjects available</p>
+
+{% endif %}
+
+</div>
+
+</div>
+
+{% endblock %}
+```
+
+---
+
+# 🧠 Final Result
+
+User flow:
+
+```
+Dashboard
+   ↓
+Class 5 click
+   ↓
+Subjects page
+
+Bangla
+Math
+English
+Science
+```
+
+---
+
+# 🚀 Next Step
+
+এর পরে বানাতে হবে:
+
+```
+Subject → Quiz list page
+```
+
+Example:
+
+```
+Bangla
+   ↓
+Grammar Quiz
+Literature Quiz
+Vocabulary Quiz
+```
+
+---
+
+যদি চাও আমি তোমাকে **complete 4 page flow code** দিতে পারি:
+
+```
+Dashboard
+Subjects
+Quizzes
+Quiz Player
+```
+
+এটা দিলে তোমার quiz platform **fully working হয়ে যাবে**।

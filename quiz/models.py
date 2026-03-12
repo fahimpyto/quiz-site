@@ -1,6 +1,5 @@
 from django.db import models
 
-
 class Class(models.Model):
     name = models.CharField(max_length=100)
 
@@ -13,19 +12,18 @@ class Subject(models.Model):
     class_name = models.ForeignKey(Class, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.name
+        return f"{self.class_name} - {self.name}"
 
 
-class Question(models.Model):
+class Quiz(models.Model):
+
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
-    question = models.TextField()
 
-    option1 = models.CharField(max_length=200)
-    option2 = models.CharField(max_length=200)
-    option3 = models.CharField(max_length=200)
-    option4 = models.CharField(max_length=200)
+    title = models.CharField(max_length=200)
 
-    correct = models.CharField(max_length=200)
+    questions_json = models.JSONField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.question
+        return self.title

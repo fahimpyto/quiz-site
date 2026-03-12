@@ -1,0 +1,575 @@
+{% extends "quiz/base.html" %}
+{% load static %}
+
+{% block title %}Results – {{ quiz.title }} – QuizMaster{% endblock %}
+{% block meta_description %}Your quiz result for: {{ quiz.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ── Result Hero ─────────────────────────────────────── */
+  .result-hero {
+    background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 60%, #2563eb 100%);
+    color: #fff;
+    padding: 3rem 0 4.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .result-hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+  .result-hero .eyebrow { background: rgba(255,255,255,.18); color: #fff; border-color: rgba(255,255,255,.3); }
+  .result-hero h1 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: clamp(1.7rem, 4vw, 2.4rem);
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: .4rem;
+    letter-spacing: -.02em;
+  }
+  .result-hero .quiz-subtitle { font-size: .93rem; color: rgba(255,255,255,.75); margin-bottom: 1.75rem; }
+
+  /* Score Ring */
+  .score-ring-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .3rem;
+  }
+  .score-ring {
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: conic-gradient(rgba(255,255,255,.9) 0% var(--pct, 0%), rgba(255,255,255,.18) var(--pct, 0%) 100%);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 0 8px rgba(255,255,255,.12), inset 0 0 0 12px rgba(37,99,235,.6);
+    position: relative;
+  }
+  .score-ring-inner {
+    width: 90px; height: 90px;
+    border-radius: 50%;
+    background: var(--primary);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,.2);
+  }
+  .score-ring-pct {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+  }
+  .score-ring-lbl { font-size: .65rem; color: rgba(255,255,255,.7); font-weight: 600; letter-spacing: .05em; }
+  .score-fraction {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    font-size: 1.3rem;
+    color: #fff;
+  }
+  .score-fraction small { font-size: .8rem; font-weight: 600; opacity: .75; }
+  .motivational-msg {
+    font-size: .88rem;
+    font-weight: 600;
+    background: rgba(255,255,255,.18);
+    border-radius: 100px;
+    padding: 5px 16px;
+    color: #fff;
+    display: inline-block;
+  }
+
+  /* ── Summary Cards ───────────────────────────────────── */
+  .summary-row {
+    margin-top: -2rem;
+    position: relative;
+    z-index: 10;
+    margin-bottom: 2rem;
+  }
+  .stat-card {
+    background: #fff;
+    border-radius: var(--radius-md);
+    padding: 1.1rem 1rem;
+    text-align: center;
+    box-shadow: var(--shadow-hover);
+    border: 1.5px solid var(--border);
+    height: 100%;
+  }
+  .stat-card .stat-icon {
+    width: 42px; height: 42px;
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    margin: 0 auto .55rem;
+  }
+  .stat-card .stat-num {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: .2rem;
+  }
+  .stat-card .stat-label {
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--text-soft);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .stat-correct  .stat-icon { background: var(--secondary-light); color: var(--secondary-hover); }
+  .stat-correct  .stat-num  { color: var(--secondary-hover); }
+  .stat-wrong    .stat-icon { background: #fff5f5; color: var(--danger); }
+  .stat-wrong    .stat-num  { color: var(--danger); }
+  .stat-skipped  .stat-icon { background: #fffbeb; color: #b45309; }
+  .stat-skipped  .stat-num  { color: #b45309; }
+  .stat-score    .stat-icon { background: var(--primary-light); color: var(--primary); }
+  .stat-score    .stat-num  { color: var(--primary); }
+
+  /* ── Leaderboard ─────────────────────────────────────── */
+  .leaderboard-card {
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    position: sticky;
+    top: 80px;
+  }
+  .lb-header {
+    background: linear-gradient(135deg, var(--primary), #3b82f6);
+    padding: .85rem 1.2rem;
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .lb-header h6 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    font-size: .9rem;
+    color: #fff; margin: 0;
+  }
+  .lb-list { list-style: none; margin: 0; padding: 0; }
+  .lb-item {
+    display: flex; align-items: center; gap: .75rem;
+    padding: .75rem 1.2rem;
+    border-bottom: 1px solid var(--border);
+    transition: background .2s;
+  }
+  .lb-item:last-child { border-bottom: none; }
+  .lb-item:hover { background: var(--bg); }
+  .lb-rank {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800; font-size: .78rem;
+    width: 24px; text-align: center; flex-shrink: 0;
+  }
+  .lb-rank.r1 { color: #f59e0b; }
+  .lb-rank.r2 { color: var(--text-muted); }
+  .lb-rank.r3 { color: #cd7c2f; }
+  .lb-rank.rn { color: var(--text-muted); }
+  .lb-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--primary-light);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700; font-size: .78rem;
+    color: var(--primary); flex-shrink: 0;
+  }
+  .lb-name {
+    flex: 1;
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .lb-score {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800; font-size: .85rem;
+    color: var(--primary);
+  }
+  .lb-item.lb-me { background: var(--primary-light); }
+  .lb-item.lb-me .lb-name::after {
+    content: ' (You)';
+    color: var(--primary); font-size: .72rem;
+  }
+
+  /* ── Results Section ─────────────────────────────────── */
+  .results-heading {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800; font-size: 1.2rem;
+    color: var(--text);
+    margin-bottom: 1.25rem;
+    display: flex; align-items: center; gap: .6rem;
+  }
+
+  /* ── Review Question Card ────────────────────────────── */
+  .review-card {
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.35rem 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow-card);
+  }
+  .review-q-header { display: flex; align-items: flex-start; gap: .75rem; margin-bottom: 1rem; }
+  .rq-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px;
+    border-radius: 7px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: .72rem; font-weight: 800;
+    flex-shrink: 0;
+  }
+  .rq-num.correct-q  { background: var(--secondary-light); color: var(--secondary-hover); }
+  .rq-num.wrong-q    { background: #fff5f5; color: var(--danger); }
+  .rq-num.skipped-q  { background: #fffbeb; color: #b45309; }
+
+  .review-q-text {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: .93rem; font-weight: 600;
+    color: var(--text); line-height: 1.5; margin: 0;
+  }
+  .result-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: .72rem; font-weight: 700;
+    border-radius: 100px; padding: 3px 10px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .chip-correct { background: var(--secondary-light); color: var(--secondary-hover); }
+  .chip-wrong   { background: #fff5f5; color: var(--danger); }
+  .chip-skipped { background: #fffbeb; color: #b45309; }
+
+  /* Review Options */
+  .review-option-list { display: flex; flex-direction: column; gap: .4rem; }
+  .rev-opt {
+    display: flex; align-items: center; gap: .65rem;
+    padding: .6rem .85rem;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    font-size: .87rem;
+  }
+  /* GREEN: correct answer */
+  .rev-opt.opt-correct {
+    border-color: var(--secondary);
+    background: var(--secondary-light);
+  }
+  .rev-opt.opt-correct .opt-indicator { background: var(--secondary); color: #fff; }
+  /* RED: wrong answer chosen by user */
+  .rev-opt.opt-wrong-chosen {
+    border-color: var(--danger);
+    background: #fff5f5;
+  }
+  .rev-opt.opt-wrong-chosen .opt-indicator { background: var(--danger); color: #fff; }
+  /* YELLOW: skipped (correct still shown green) */
+  .rev-opt.opt-skipped-correct {
+    border-color: #fbbf24;
+    background: #fffbeb;
+  }
+  .rev-opt.opt-skipped-correct .opt-indicator { background: #f59e0b; color: #fff; }
+
+  .opt-indicator {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: .68rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    color: var(--text-muted);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .opt-indicator-letter {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: .72rem; font-weight: 700;
+    color: var(--text-muted); width: 16px; flex-shrink: 0;
+  }
+  .rev-opt.opt-correct .opt-indicator-letter,
+  .rev-opt.opt-wrong-chosen .opt-indicator-letter,
+  .rev-opt.opt-skipped-correct .opt-indicator-letter { color: inherit; }
+
+  /* ── Action Buttons ──────────────────────────────────── */
+  .result-actions {
+    display: flex; flex-wrap: wrap; gap: .75rem;
+    margin: 2.5rem 0 1rem;
+  }
+  .btn-retry {
+    background: var(--primary); color: #fff;
+    border: none; border-radius: var(--radius-sm);
+    padding: .65rem 1.6rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700; font-size: .93rem;
+    display: inline-flex; align-items: center; gap: 7px;
+    cursor: pointer;
+    transition: background .2s, transform .15s, box-shadow .2s;
+    box-shadow: var(--shadow-btn);
+    text-decoration: none;
+  }
+  .btn-retry:hover { background: var(--primary-hover); color: #fff; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37,99,235,.35); }
+  .btn-dashboard {
+    background: transparent; color: var(--text-soft);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: .65rem 1.6rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700; font-size: .93rem;
+    display: inline-flex; align-items: center; gap: 7px;
+    cursor: pointer;
+    transition: border-color .2s, color .2s;
+    text-decoration: none;
+  }
+  .btn-dashboard:hover { border-color: var(--primary); color: var(--primary); }
+
+  @media (max-width: 768px) {
+    .result-hero { padding: 2rem 0 3.5rem; }
+    .score-ring { width: 100px; height: 100px; }
+    .score-ring-inner { width: 74px; height: 74px; }
+    .score-ring-pct { font-size: 1.2rem; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Result Hero ──────────────────────────────────────── -->
+<div class="result-hero">
+  <div class="container">
+    <div class="row align-items-center gy-4">
+      <div class="col-12 col-md-7">
+        <span class="eyebrow anim-up d1"><i class="bi bi-trophy-fill me-1"></i> Quiz Completed</span>
+        <h1 class="anim-up d2">{{ quiz.title }}</h1>
+        <p class="quiz-subtitle anim-up d3">Here's how you did. Review your answers below.</p>
+        <div class="anim-up d4">
+          <span class="motivational-msg" id="motivationalMsg">
+            <i class="bi bi-star-fill me-1"></i>
+            <span id="motivationalText">Great effort!</span>
+          </span>
+        </div>
+      </div>
+      <div class="col-12 col-md-5 d-flex justify-content-md-end justify-content-start">
+        <div class="score-ring-wrap anim-up d3">
+          <div class="score-ring" id="scoreRing">
+            <div class="score-ring-inner">
+              <span class="score-ring-pct" id="scorePct">0%</span>
+              <span class="score-ring-lbl">SCORE</span>
+            </div>
+          </div>
+          <div class="score-fraction mt-2">
+            <span id="scoreNum">{{ score }}</span>
+            <small> / {{ total_questions }}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Summary Stats (overlapping hero) ───────────────── -->
+<div class="container summary-row">
+  <div class="row g-3">
+    <div class="col-6 col-md-3">
+      <div class="stat-card stat-correct reveal">
+        <div class="stat-icon"><i class="bi bi-check-circle-fill"></i></div>
+        <div class="stat-num">{{ correct_count }}</div>
+        <div class="stat-label">Correct</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card stat-wrong reveal">
+        <div class="stat-icon"><i class="bi bi-x-circle-fill"></i></div>
+        <div class="stat-num">{{ wrong_count }}</div>
+        <div class="stat-label">Wrong</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card stat-skipped reveal">
+        <div class="stat-icon"><i class="bi bi-dash-circle-fill"></i></div>
+        <div class="stat-num">{{ skipped_count }}</div>
+        <div class="stat-label">Skipped</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card stat-score reveal">
+        <div class="stat-icon"><i class="bi bi-award-fill"></i></div>
+        <div class="stat-num">{{ score }}</div>
+        <div class="stat-label">Final Score</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Main content: breakdown + leaderboard ─────────── -->
+<div class="container mb-5">
+  <div class="row gy-4">
+
+    <!-- Question Breakdown (left / main) -->
+    <div class="col-12 col-lg-8">
+      <div class="result-actions">
+        <a href="{% url 'take_quiz' quiz.pk %}" class="btn-retry">
+          <i class="bi bi-arrow-repeat"></i> Retry Quiz
+        </a>
+        <a href="{% url 'dashboard' %}" class="btn-dashboard">
+          <i class="bi bi-grid-3x3-gap-fill"></i> Back to Dashboard
+        </a>
+      </div>
+
+      <div class="results-heading">
+        <i class="bi bi-list-check" style="color:var(--primary);"></i>
+        Question Breakdown
+        <span class="eyebrow ms-1" style="margin-bottom:0;font-size:.7rem;">{{ total_questions }} Questions</span>
+      </div>
+
+      <div id="breakdownContainer">
+        {% for item in result_items %}
+        <div class="review-card reveal">
+          <div class="review-q-header">
+            <span class="rq-num
+              {% if item.is_correct %}correct-q
+              {% elif item.is_skipped %}skipped-q
+              {% else %}wrong-q{% endif %}">
+              {{ forloop.counter }}
+            </span>
+            <p class="review-q-text">{{ item.question_text }}</p>
+            <span class="result-chip ms-auto
+              {% if item.is_correct %}chip-correct
+              {% elif item.is_skipped %}chip-skipped
+              {% else %}chip-wrong{% endif %}">
+              {% if item.is_correct %}
+                <i class="bi bi-check-lg"></i> Correct
+              {% elif item.is_skipped %}
+                <i class="bi bi-dash-lg"></i> Skipped
+              {% else %}
+                <i class="bi bi-x-lg"></i> Wrong
+              {% endif %}
+            </span>
+          </div>
+
+          <div class="review-option-list">
+            {% for opt in item.options %}
+            <div class="rev-opt
+              {% if opt.is_correct and item.is_skipped %}opt-skipped-correct
+              {% elif opt.is_correct %}opt-correct
+              {% elif opt.is_user_choice and not opt.is_correct %}opt-wrong-chosen
+              {% endif %}">
+              <span class="opt-indicator">
+                {% if opt.is_correct and item.is_skipped %}<i class="bi bi-dash-lg"></i>
+                {% elif opt.is_correct %}<i class="bi bi-check-lg"></i>
+                {% elif opt.is_user_choice %}<i class="bi bi-x-lg"></i>
+                {% else %}{{ opt.letter }}{% endif %}
+              </span>
+              <span class="opt-indicator-letter">{{ opt.letter }}</span>
+              <span>{{ opt.text }}</span>
+              {% if opt.is_correct %}
+                <span class="ms-auto" style="font-size:.72rem;font-weight:700;color:var(--secondary-hover);">Correct Answer</span>
+              {% endif %}
+              {% if opt.is_user_choice and not opt.is_correct %}
+                <span class="ms-auto" style="font-size:.72rem;font-weight:700;color:var(--danger);">Your Answer</span>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-4 text-muted">No result data available.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Leaderboard (right sidebar) -->
+    <div class="col-12 col-lg-4">
+      <div style="height:1rem;"></div><!-- offset below action buttons -->
+      <div class="leaderboard-card reveal">
+        <div class="lb-header">
+          <i class="bi bi-trophy-fill" style="color:#fde68a;font-size:1rem;"></i>
+          <h6>Top Scorers</h6>
+        </div>
+        <ul class="lb-list">
+          {% for entry in leaderboard %}
+          <li class="lb-item {% if entry.is_current_user %}lb-me{% endif %}">
+            <span class="lb-rank
+              {% if forloop.counter == 1 %}r1
+              {% elif forloop.counter == 2 %}r2
+              {% elif forloop.counter == 3 %}r3
+              {% else %}rn{% endif %}">
+              {% if forloop.counter == 1 %}🥇
+              {% elif forloop.counter == 2 %}🥈
+              {% elif forloop.counter == 3 %}🥉
+              {% else %}{{ forloop.counter }}{% endif %}
+            </span>
+            <div class="lb-avatar">{{ entry.username|slice:":1"|upper }}</div>
+            <span class="lb-name">{{ entry.username }}</span>
+            <span class="lb-score">{{ entry.score }}</span>
+          </li>
+          {% empty %}
+          <li class="lb-item"><span class="text-muted" style="font-size:.85rem;">No scores yet.</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <!-- Color Legend -->
+      <div class="mt-3 p-3" style="background:#fff;border:1.5px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-card);">
+        <div class="mb-2" style="font-family:'Plus Jakarta Sans',sans-serif;font-size:.78rem;font-weight:700;color:var(--text-soft);">ANSWER KEY</div>
+        <div class="d-flex flex-column gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <span style="width:12px;height:12px;border-radius:3px;background:var(--secondary);flex-shrink:0;display:inline-block;"></span>
+            <span style="font-size:.82rem;color:var(--text-soft);">Correct answer</span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span style="width:12px;height:12px;border-radius:3px;background:var(--danger);flex-shrink:0;display:inline-block;"></span>
+            <span style="font-size:.82rem;color:var(--text-soft);">Wrong answer (your pick)</span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span style="width:12px;height:12px;border-radius:3px;background:#f59e0b;flex-shrink:0;display:inline-block;"></span>
+            <span style="font-size:.82rem;color:var(--text-soft);">Skipped question</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+
+  let result = null;
+
+  try{
+    result = JSON.parse(localStorage.getItem("quiz_result"));
+  }catch(e){
+    result = null;
+  }
+
+  if(result){
+
+    document.getElementById("scorePct").innerText = result.score + "%";
+
+    document.querySelector(".stat-correct .stat-num").innerText = result.correct;
+    document.querySelector(".stat-wrong .stat-num").innerText = result.wrong;
+    document.querySelector(".stat-skipped .stat-num").innerText = result.skipped;
+
+    document.getElementById("scoreRing")
+      .style.setProperty("--pct", result.score + "%");
+
+  }
+
+  /* clear storage */
+  localStorage.removeItem("quiz_result");
+
+
+  const score = result ? result.correct : {{ score|default:0 }};
+  const total = result ? (result.correct + result.wrong + result.skipped) : {{ total_questions|default:1 }};
+
+  const pct = total ? Math.round(score / total * 100) : 0;
+
+  const msgEl  = document.getElementById('motivationalText');
+
+  if (pct >= 90)      msgEl.textContent = 'Outstanding! 🎉 You nailed it!';
+  else if (pct >= 75) msgEl.textContent = 'Great job! 👏 Almost perfect!';
+  else if (pct >= 60) msgEl.textContent = 'Good work! 💪 Keep it up!';
+  else if (pct >= 40) msgEl.textContent = 'Nice try! 📚 A bit more study will help.';
+  else                msgEl.textContent = 'Keep practising! 🚀 You\'ll get there!';
+
+})();
+</script>
+{% endblock %}
