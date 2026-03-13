@@ -293,3 +293,13 @@ def quiz_leaderboard(request, quiz_id):
         "quiz": quiz,
         "leaderboard": leaderboard
     })
+
+from .models import TeamMember
+
+def about(request):
+
+    members = TeamMember.objects.all()
+
+    return render(request, "quiz/about.html", {
+        "members": members
+    })
