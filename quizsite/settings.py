@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-#9ynivx+4@5%wz$-a&27&aomb$0rapfjsnljvhca94tq%dfmac"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = [
     "quiz-site-pp5w.onrender.com",

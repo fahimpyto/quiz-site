@@ -1,0 +1,48 @@
+{% extends "quiz/base.html" %}
+
+{% block content %}
+
+<div class="container mt-5">
+
+<h2 class="mb-4">
+🏆 {{ quiz.title }} Leaderboard
+</h2>
+
+<table class="table">
+
+<thead>
+
+<tr>
+<th>Rank</th>
+<th>User</th>
+<th>Attempt</th>
+<th>Score</th>
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for item in leaderboard %}
+
+<tr>
+
+<td>{{ forloop.counter }}</td>
+
+<td>{{ item.user.username }}</td>
+
+<td>{{ item.attempt_number }}</td>
+
+<td>{{ item.score }} / {{ item.total }}</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+{% endblock %}

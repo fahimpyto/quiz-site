@@ -1,5 +1,6 @@
 {% extends "quiz/base.html" %}
 {% load static %}
+{% load i18n %}
 
 {% block title %}Results – {{ quiz.title }} – QuizMaster{% endblock %}
 {% block meta_description %}Your quiz result for: {{ quiz.title }}{% endblock %}
@@ -346,9 +347,9 @@
       </div>
       <div class="col-12 col-md-5 d-flex justify-content-md-end justify-content-start">
         <div class="score-ring-wrap anim-up d3">
-          <div class="score-ring" id="scoreRing">
+          <div class="score-ring" id="scoreRing" {% if total_questions %}style="--pct: {% widthratio score total_questions 100 %}%"{% else %}style="--pct: 0%"{% endif %}>
             <div class="score-ring-inner">
-              <span class="score-ring-pct" id="scorePct">0%</span>
+              <span class="score-ring-pct" id="scorePct">{% widthratio score total_questions 100 %}%</span>
               <span class="score-ring-lbl">SCORE</span>
             </div>
           </div>
@@ -408,6 +409,9 @@
         </a>
         <a href="{% url 'dashboard' %}" class="btn-dashboard">
           <i class="bi bi-grid-3x3-gap-fill"></i> Back to Dashboard
+        </a>
+        <a href="{% url 'quiz_leaderboard' quiz.id %}" class="btn btn-primary">
+          🏆 Leaderboard
         </a>
       </div>
 
@@ -482,24 +486,23 @@
           <h6>Top Scorers</h6>
         </div>
         <ul class="lb-list">
-          {% for entry in leaderboard %}
-          <li class="lb-item {% if entry.is_current_user %}lb-me{% endif %}">
-            <span class="lb-rank
-              {% if forloop.counter == 1 %}r1
-              {% elif forloop.counter == 2 %}r2
-              {% elif forloop.counter == 3 %}r3
-              {% else %}rn{% endif %}">
-              {% if forloop.counter == 1 %}🥇
-              {% elif forloop.counter == 2 %}🥈
-              {% elif forloop.counter == 3 %}🥉
-              {% else %}{{ forloop.counter }}{% endif %}
-            </span>
-            <div class="lb-avatar">{{ entry.username|slice:":1"|upper }}</div>
-            <span class="lb-name">{{ entry.username }}</span>
-            <span class="lb-score">{{ entry.score }}</span>
+          {% for item in leaderboard %}
+          <li class="lb-item">
+            <div class="lb-rank {% if forloop.counter <= 3 %}r{{ forloop.counter }}{% else %}rn{% endif %}">
+              {{ forloop.counter }}
+            </div>
+            <div class="lb-avatar">
+              {{ item.user.username|first|upper }}
+            </div>
+            <div class="lb-name">
+              {{ item.user.username }}
+            </div>
+            <div class="lb-score">
+              {{ item.score }} / {{ item.total }}
+            </div>
           </li>
           {% empty %}
-          <li class="lb-item"><span class="text-muted" style="font-size:.85rem;">No scores yet.</span></li>
+          <li>No scores yet</li>
           {% endfor %}
         </ul>
       </div>
@@ -532,33 +535,8 @@
 <script>
 (function(){
 
-  let result = null;
-
-  try{
-    result = JSON.parse(localStorage.getItem("quiz_result"));
-  }catch(e){
-    result = null;
-  }
-
-  if(result){
-
-    document.getElementById("scorePct").innerText = result.score + "%";
-
-    document.querySelector(".stat-correct .stat-num").innerText = result.correct;
-    document.querySelector(".stat-wrong .stat-num").innerText = result.wrong;
-    document.querySelector(".stat-skipped .stat-num").innerText = result.skipped;
-
-    document.getElementById("scoreRing")
-      .style.setProperty("--pct", result.score + "%");
-
-  }
-
-  /* clear storage */
-  localStorage.removeItem("quiz_result");
-
-
-  const score = result ? result.correct : {{ score|default:0 }};
-  const total = result ? (result.correct + result.wrong + result.skipped) : {{ total_questions|default:1 }};
+  const score = {{ score|default:0 }};
+  const total = {{ total_questions|default:1 }};
 
   const pct = total ? Math.round(score / total * 100) : 0;
 

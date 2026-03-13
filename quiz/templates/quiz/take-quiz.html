@@ -19,6 +19,7 @@
   </div>
 
   <form id="quizForm">
+    {% csrf_token %}
 
     {% for q in questions %}
 
@@ -121,11 +122,22 @@
 
 
 <script>
-  
+
+  // ── Fix 1: answers object declared at top scope ──────────
+  let answers = {};
+
+  // ── Fix 2 & 5: reset memory + clear storage on page load ─
+  window.addEventListener("load", function () {
+    answers = {};
+    localStorage.removeItem("quiz_answers");
+  });
+
+  // ── Progress tracking ─────────────────────────────────────
   let answered = 0;
   const total = {{ questions|length }};
 
   function lockQuestion(input) {
+
     const container = input.closest(".question-card");
 
     if (container.dataset.locked) return;
@@ -137,6 +149,11 @@
 
     input.parentElement.classList.add("selected");
 
+    const qIndex = input.name.replace("q", "");
+    const optIndex = input.value;
+
+    answers[qIndex] = optIndex;
+
     answered++;
 
     document.getElementById("progress").innerText =
@@ -146,7 +163,10 @@
       (answered / total * 100) + "%";
   }
 
+  // ── Fix 3: track selections into answers object ───────────
+  // (handled inside lockQuestion above — no separate listener needed)
 
+  // ── Timer ─────────────────────────────────────────────────
   let duration = {{ duration }} * 60;
   const timerEl = document.getElementById("timer");
 
@@ -168,46 +188,41 @@
   updateTimer();
   setInterval(updateTimer, 1000);
 
+  // ── CSRF helper ───────────────────────────────────────────
+  function getCSRFToken() {
+    return document.querySelector("[name=csrfmiddlewaretoken]").value;
+  }
 
-  // ✅ FIXED: Submit Function with Fetch API
+  // ── Fix 4: submit with payload snapshot + reset after ─────
   function submitQuiz() {
-    
-    // 1. Collect answers
-    let answers = {};
 
-    document.querySelectorAll("input[type=radio]:checked").forEach(el => {
-      let q = el.name.replace("q", "");
-      answers[q] = el.value;
-    });
+    // Snapshot current answers, then clear global immediately
+    const payload = { ...answers };
 
-    // 2. Disable button to prevent double click
-    const btn = document.querySelector('.submit-btn');
-    if(btn) {
+    const btn = document.querySelector(".submit-btn");
+    if (btn) {
       btn.innerText = "Submitting...";
       btn.disabled = true;
     }
 
-    // 3. Send data to backend
-    fetch("/quiz/{{ quiz.id }}/submit/", {
+    fetch(`/quiz/{{ quiz.id }}/submit/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-CSRFToken": "{{ csrf_token }}"
+        "X-CSRFToken": getCSRFToken()
       },
-      body: JSON.stringify(answers)
+      body: JSON.stringify(payload)
     })
     .then(res => res.json())
     .then(data => {
-      // 4. Store result in localStorage (optional, based on your snippet)
-      localStorage.setItem("quiz_result", JSON.stringify(data));
-
-      // 5. Redirect to result page
-      window.location.href = "/quiz/{{ quiz.id }}/result/";
+      answers = {};                          // RESET MEMORY
+      localStorage.removeItem("quiz_answers");
+      window.location.href = data.redirect;
     })
     .catch(err => {
       console.error("Error:", err);
       alert("Failed to submit quiz. Please try again.");
-      if(btn) {
+      if (btn) {
         btn.innerText = "Submit Quiz";
         btn.disabled = false;
       }

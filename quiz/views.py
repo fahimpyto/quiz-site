@@ -1,12 +1,21 @@
-from django.shortcuts import render, redirect , get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
 import re
-from .models import Class, Subject, Quiz
+import json
+
+from .models import Class, Subject, Quiz, QuizAttempt
+
 
 # Landing page
 def home(request):
+
+    # Logged in user → dashboard
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+
     return render(request, "quiz/index.html")
 
 
@@ -45,8 +54,12 @@ def register_view(request):
 
     return render(request, "quiz/register.html")
 
+
 # Login
 def login_view(request):
+
+    if request.user.is_authenticated:
+        return redirect("dashboard")
 
     if request.method == "POST":
 
@@ -66,6 +79,7 @@ def login_view(request):
 
     return render(request, "quiz/login.html")
 
+
 # Logout
 def logout_view(request):
     logout(request)
@@ -73,12 +87,8 @@ def logout_view(request):
 
 
 # Dashboard
-from .models import Class
-
+@login_required
 def dashboard(request):
-
-    if not request.user.is_authenticated:
-        return redirect("login")
 
     classes = Class.objects.all()
 
@@ -87,11 +97,11 @@ def dashboard(request):
     })
 
 
-
-
+# Subjects
+@login_required
 def subjects(request, class_id):
 
-    class_obj = Class.objects.get(id=class_id)
+    class_obj = get_object_or_404(Class, id=class_id)
 
     subjects = Subject.objects.filter(class_name=class_obj)
 
@@ -101,6 +111,8 @@ def subjects(request, class_id):
     })
 
 
+# Quizzes
+@login_required
 def quizzes(request, subject_id):
 
     subject = get_object_or_404(Subject, id=subject_id)
@@ -110,7 +122,7 @@ def quizzes(request, subject_id):
     for quiz in quizzes:
 
         try:
-            data = quiz.questions_json   # ✅ already dict
+            data = quiz.questions_json
 
             quiz.question_count = len(data.get("questions", []))
             quiz.duration_minutes = data.get("duration_minutes", 5)
@@ -125,10 +137,9 @@ def quizzes(request, subject_id):
         "quizzes": quizzes
     })
 
-import json
 
-
-
+# Take quiz
+@login_required
 def take_quiz(request, quiz_id):
 
     quiz = get_object_or_404(Quiz, id=quiz_id)
@@ -148,10 +159,8 @@ def take_quiz(request, quiz_id):
     })
 
 
-import json
-from django.http import JsonResponse
-
-
+# Submit quiz
+@login_required
 def submit_quiz(request, quiz_id):
 
     if request.method == "POST":
@@ -159,54 +168,128 @@ def submit_quiz(request, quiz_id):
         quiz = get_object_or_404(Quiz, id=quiz_id)
 
         data = quiz.questions_json
-
         if isinstance(data, str):
             data = json.loads(data)
 
         questions = data.get("questions", [])
-
         user_answers = json.loads(request.body)
 
         correct = 0
         wrong = 0
         skipped = 0
 
+        result_items = []
+
         for i, q in enumerate(questions):
 
-            user_ans = user_answers.get(str(i))
+            user_ans = user_answers.get(str(i + 1))
+            correct_index = q["rightAnswerIndex"]
+
+            options = []
+
+            for j, opt in enumerate(q["options"]):
+
+                options.append({
+                    "letter": chr(65 + j),
+                    "text": opt,
+                    "is_correct": j == correct_index,
+                    "is_user_choice": user_ans is not None and int(user_ans) == j
+                })
 
             if user_ans is None:
                 skipped += 1
+                is_correct = False
+                is_skipped = True
 
-            elif int(user_ans) == q["rightAnswerIndex"]:
+            elif int(user_ans) == correct_index:
                 correct += 1
+                is_correct = True
+                is_skipped = False
 
             else:
                 wrong += 1
+                is_correct = False
+                is_skipped = False
+
+            result_items.append({
+                "question_text": q["text"],
+                "options": options,
+                "is_correct": is_correct,
+                "is_skipped": is_skipped
+            })
 
         total = len(questions)
+        score = correct
 
-        score = round((correct / total) * 100) if total > 0 else 0
+        attempt_count = QuizAttempt.objects.filter(
+            user=request.user,
+            quiz=quiz
+        ).count() + 1
 
-        return JsonResponse({
+        QuizAttempt.objects.create(
+            user=request.user,
+            quiz=quiz,
+            score=score,
+            total=total,
+            attempt_number=attempt_count
+        )
+
+        request.session["quiz_result"] = {
             "correct": correct,
             "wrong": wrong,
             "skipped": skipped,
             "score": score,
-            "total": total
+            "total": total,
+            "result_items": result_items
+        }
+
+        return JsonResponse({
+            "redirect": f"/quiz/{quiz_id}/result/"
         })
 
+
+# Result page
+@login_required
 def quiz_result(request, quiz_id):
 
     quiz = get_object_or_404(Quiz, id=quiz_id)
 
+    result = request.session.get("quiz_result", {
+        "correct": 0,
+        "wrong": 0,
+        "skipped": 0,
+        "score": 0,
+        "total": 0,
+        "result_items": []
+    })
+
+    leaderboard = QuizAttempt.objects.filter(
+        quiz=quiz
+    ).order_by("-score", "created_at")[:3]
+
     return render(request, "quiz/quiz-result.html", {
         "quiz": quiz,
-        "correct_count": 0,
-        "wrong_count": 0,
-        "skipped_count": 0,
-        "score": 0,
-        "total_questions": 0,
-        "result_items": [],
-        "leaderboard": []
+        "correct_count": result["correct"],
+        "wrong_count": result["wrong"],
+        "skipped_count": result["skipped"],
+        "score": result["score"],
+        "total_questions": result["total"],
+        "result_items": result["result_items"],
+        "leaderboard": leaderboard
+    })
+
+
+# Leaderboard page
+@login_required
+def quiz_leaderboard(request, quiz_id):
+
+    quiz = get_object_or_404(Quiz, id=quiz_id)
+
+    leaderboard = QuizAttempt.objects.filter(
+        quiz=quiz
+    ).order_by("-score", "created_at")
+
+    return render(request, "quiz/quiz_leaderboard.html", {
+        "quiz": quiz,
+        "leaderboard": leaderboard
     })
