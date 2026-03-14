@@ -303,3 +303,9 @@ def about(request):
     return render(request, "quiz/about.html", {
         "members": members
     })
+
+
+from django.http import HttpResponse
+
+def health(request):
+    return HttpResponse("Server running")
