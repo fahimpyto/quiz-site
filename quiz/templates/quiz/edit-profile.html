@@ -1,0 +1,54 @@
+{% extends "quiz/base.html" %}
+
+{% block content %}
+
+<div class="container py-5" style="max-width: 600px;">
+
+  <h2 class="mb-4">Edit Profile</h2>
+
+  <form method="POST">
+    {% csrf_token %}
+
+    <!-- Basic Info -->
+    <h5>Basic Info</h5>
+
+    <input type="text" name="full_name" class="form-control mb-3"
+           value="{{ request.user.first_name }}"
+           placeholder="Full Name">
+
+    <input type="email" name="email" class="form-control mb-3"
+           value="{{ request.user.email }}"
+           placeholder="Email">
+
+    <input type="text" name="education" class="form-control mb-4"
+           value="{{ request.user.profile.education }}"
+           placeholder="Education Institution">
+
+    <!-- Password Section -->
+    <h5>Change Password</h5>
+
+    <input type="password" name="current_password"
+           class="form-control mb-2"
+           placeholder="Current Password">
+
+    <input type="password" name="new_password"
+           class="form-control mb-2"
+           placeholder="New Password">
+
+    <input type="password" name="confirm_password"
+           class="form-control mb-2"
+           placeholder="Confirm Password">
+
+    <a href="#" class="text-muted small">Forgot password?</a>
+
+    <br><br>
+
+    <button type="submit" class="btn btn-primary w-100">
+      Save Changes
+    </button>
+
+  </form>
+
+</div>
+
+{% endblock %}

@@ -89,8 +89,6 @@ def logout_view(request):
 # Dashboard
 @login_required
 def dashboard(request):
-    for user in User.objects.all():
-        user.save()
 
     classes = Class.objects.all()
 
@@ -311,3 +309,45 @@ from django.http import HttpResponse
 
 def health(request):
     return HttpResponse("Server running")
+
+
+from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
+
+@login_required
+def edit_profile(request):
+
+    if request.method == "POST":
+        user = request.user
+
+        # update basic info
+        user.first_name = request.POST.get("full_name")
+        user.email = request.POST.get("email")
+        user.save()
+
+        # update profile
+        profile = user.profile
+        profile.education = request.POST.get("education")
+        profile.save()
+
+        # password change
+        current_pass = request.POST.get("current_password")
+        new_pass = request.POST.get("new_password")
+        confirm_pass = request.POST.get("confirm_password")
+
+        if current_pass and new_pass:
+            if user.check_password(current_pass):
+                if new_pass == confirm_pass:
+                    user.set_password(new_pass)
+                    user.save()
+                    update_session_auth_hash(request, user)  # 🔥 important
+                    messages.success(request, "Password updated!")
+                else:
+                    messages.error(request, "Passwords do not match")
+            else:
+                messages.error(request, "Current password incorrect")
+
+        messages.success(request, "Profile updated!")
+        return redirect("edit_profile")
+
+    return render(request, "quiz/edit-profile.html")
