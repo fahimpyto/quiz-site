@@ -89,6 +89,8 @@ def logout_view(request):
 # Dashboard
 @login_required
 def dashboard(request):
+    for user in User.objects.all():
+        user.save()
 
     classes = Class.objects.all()
 

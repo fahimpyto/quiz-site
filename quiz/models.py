@@ -41,9 +41,6 @@ class QuizAttempt(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
 
-
-from django.db import models
-
 class TeamMember(models.Model):
 
     name = models.CharField(max_length=100)
@@ -75,6 +72,8 @@ from django.dispatch import receiver
 def create_profile(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)
+    else:
+        Profile.objects.get_or_create(user=instance)
 
 @receiver(post_save, sender=User)
 def save_profile(sender, instance, **kwargs):
