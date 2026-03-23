@@ -58,13 +58,32 @@ class TeamMember(models.Model):
     def __str__(self):
         return self.name
     
+CLASS_CHOICES = [
+    ("1", "Class 1"),
+    ("2", "Class 2"),
+    ("3", "Class 3"),
+    ("4", "Class 4"),
+    ("5", "Class 5"),
+    ("6", "Class 6"),
+    ("7", "Class 7"),
+    ("8", "Class 8"),
+    ("9", "Class 9"),
+    ("10", "Class 10"),
+    ("11", "Class 11"),
+    ("12", "Class 12"),
+    ("bachelor", "Bachelor"),
+    ("master", "Master"),
+]
+
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     education = models.CharField(max_length=255, blank=True)
+    class_name = models.CharField(max_length=20, choices=CLASS_CHOICES, blank=True)
 
     def __str__(self):
         return self.user.username
     
+       
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
