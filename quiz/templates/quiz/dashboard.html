@@ -2,755 +2,441 @@
 {% load static %}
 
 {% block title %}Dashboard – QuizMaster{% endblock %}
-{% block meta_description %}Your QuizMaster dashboard. Start practicing quizzes and track your progress.{% endblock %}
+{% block meta_description %}Your QuizMaster dashboard. Track your progress and start practicing quizzes.{% endblock %}
 
 {% block extra_css %}
 <style>
 
   /* ════════════════════════════════════════
-     DASHBOARD LAYOUT
+     PAGE
   ════════════════════════════════════════ */
-  .dash-section {
-    padding: 48px 0 80px;
+  .db-page {
     min-height: calc(100vh - 73px);
-  }
-
-  /* ── Header row ─────────────────────────── */
-  .dash-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-    margin-bottom: 40px;
-    animation: dashFadeUp 0.55s ease both;
-  }
-
-  .dash-greeting-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    background: var(--primary-light);
-    color: var(--primary);
-    border: 1px solid var(--primary-mid);
-    border-radius: 100px;
-    padding: 4px 14px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    margin-bottom: 10px;
-  }
-
-  .dash-greeting-eyebrow .live-dot {
-    width: 7px; height: 7px;
-    background: var(--secondary);
-    border-radius: 50%;
-    animation: livePulse 2s infinite;
-    flex-shrink: 0;
-  }
-
-  @keyframes livePulse {
-    0%,100% { opacity: 1; transform: scale(1); }
-    50%      { opacity: 0.5; transform: scale(1.4); }
-  }
-
-  .dash-welcome-name {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: clamp(1.6rem, 4vw, 2.2rem);
-    font-weight: 800;
-    color: var(--text);
-    line-height: 1.2;
-    margin-bottom: 8px;
-    letter-spacing: -0.02em;
-  }
-
-  .dash-welcome-sub {
-    color: var(--text-soft);
-    font-size: 0.95rem;
-    line-height: 1.65;
-    margin: 0;
-  }
-
-  /* ── Header action buttons ──────────────── */
-  .dash-header-actions {
-    display: flex;
-    gap: 10px;
-    flex-shrink: 0;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-
-  .btn-dash-outline {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    border: 1.5px solid var(--border);
-    background: white;
-    color: var(--text-soft);
-    padding: 9px 20px;
-    border-radius: var(--radius-sm);
-    font-weight: 700;
-    font-size: 0.85rem;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    transition: all 0.2s;
-    text-decoration: none;
-  }
-  .btn-dash-outline:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-    background: var(--primary-light);
-    transform: translateY(-1px);
-  }
-
-  .btn-dash-danger {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    border: 1.5px solid transparent;
-    background: #fff5f5;
-    color: var(--danger);
-    padding: 9px 20px;
-    border-radius: var(--radius-sm);
-    font-weight: 700;
-    font-size: 0.85rem;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    transition: all 0.2s;
-    text-decoration: none;
-  }
-  .btn-dash-danger:hover {
-    background: var(--danger);
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(239,68,68,0.25);
-  }
-
-  /* ── Stats strip ────────────────────────── */
-  .dash-stats-strip {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-    margin-bottom: 40px;
-    animation: dashFadeUp 0.55s 0.08s ease both;
-  }
-
-  .dash-stat-pill {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: white;
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-md);
-    padding: 14px 20px;
-    flex: 1;
-    min-width: 140px;
-    box-shadow: var(--shadow-card);
-    transition: all 0.22s;
-  }
-  .dash-stat-pill:hover {
-    border-color: var(--primary-mid);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-hover);
-  }
-
-  .dash-stat-icon {
-    width: 40px; height: 40px;
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem;
-    flex-shrink: 0;
-  }
-  .icon-blue   { background: rgba(37,99,235,0.10);  color: var(--primary); }
-  .icon-green  { background: rgba(16,185,129,0.10); color: var(--secondary); }
-  .icon-indigo { background: rgba(99,102,241,0.10); color: #6366f1; }
-
-  .dash-stat-val {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 1.25rem;
-    font-weight: 800;
-    color: var(--text);
-    line-height: 1;
-  }
-  .dash-stat-lbl {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    font-weight: 600;
-    margin-top: 2px;
-  }
-
-  /* ── Section label ──────────────────────── */
-  .dash-section-label {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 14px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    animation: dashFadeUp 0.55s 0.12s ease both;
-  }
-  .dash-section-label::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
+    background:
+      radial-gradient(ellipse 60% 40% at 100% 0%, rgba(37,99,235,.06) 0%, transparent 55%),
+      radial-gradient(ellipse 40% 50% at 0% 100%, rgba(16,185,129,.05) 0%, transparent 55%),
+      #f1f5f9;
+    padding: 2.5rem 0 5rem;
   }
 
   /* ════════════════════════════════════════
-     START QUIZ MAIN CARD
+     GREETING BAR
   ════════════════════════════════════════ */
-  .quiz-trigger-card {
-    background: white;
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-xl);
-    padding: 32px 32px 28px;
-    box-shadow: var(--shadow-card);
-    position: relative;
-    overflow: hidden;
-    cursor: pointer;
-    transition: all 0.28s cubic-bezier(0.34,1.56,0.64,1);
-    animation: dashFadeUp 0.55s 0.16s ease both;
+  .db-greeting {
+    display: flex; align-items: center;
+    justify-content: space-between; gap: 1rem;
+    flex-wrap: wrap; margin-bottom: 2rem;
+    opacity: 0; animation: dbUp .5s .05s ease forwards;
   }
-
-  /* Gradient accent top bar */
-  .quiz-trigger-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--primary), #3b82f6, var(--secondary));
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  }
-
-  /* Subtle background glow */
-  .quiz-trigger-card::after {
-    content: '';
-    position: absolute;
-    top: -60px; right: -60px;
-    width: 220px; height: 220px;
-    background: radial-gradient(circle, rgba(37,99,235,0.05) 0%, transparent 70%);
-    pointer-events: none;
-    border-radius: 50%;
-    transition: opacity 0.3s;
-    opacity: 0;
-  }
-
-  .quiz-trigger-card:hover {
-    border-color: var(--primary-mid);
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-hover);
-  }
-  .quiz-trigger-card:hover::after { opacity: 1; }
-
-  .quiz-trigger-card.active {
-    border-color: var(--primary-mid);
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.08), var(--shadow-hover);
-  }
-
-  .qtc-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    position: relative;
-    z-index: 1;
-  }
-
-  .qtc-left { display: flex; align-items: center; gap: 18px; }
-
-  .qtc-icon-wrap {
-    width: 58px; height: 58px;
-    background: linear-gradient(135deg, var(--primary), #3b82f6);
-    border-radius: var(--radius-md);
-    display: flex; align-items: center; justify-content: center;
-    color: white; font-size: 1.5rem;
-    flex-shrink: 0;
-    box-shadow: 0 4px 14px rgba(37,99,235,0.30);
-    transition: transform 0.2s;
-  }
-  .quiz-trigger-card:hover .qtc-icon-wrap { transform: scale(1.08) rotate(-3deg); }
-
-  .qtc-title {
+  .db-greeting h1 {
     font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 1.15rem;
-    font-weight: 800;
-    color: var(--text);
-    margin: 0 0 4px;
-    letter-spacing: -0.01em;
+    font-size: clamp(1.5rem, 3.5vw, 2rem);
+    font-weight: 800; color: var(--text);
+    letter-spacing: -.03em; margin: 0 0 .15rem;
   }
-  .qtc-desc {
-    font-size: 0.86rem;
-    color: var(--text-soft);
-    margin: 0;
-    line-height: 1.5;
+  .db-greeting p { font-size: .88rem; color: var(--text-muted); margin: 0; }
+  .db-live-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--primary-light); color: var(--primary);
+    border: 1px solid var(--primary-mid); border-radius: 100px;
+    padding: 3px 12px; font-size: .68rem; font-weight: 700;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: .08em; text-transform: uppercase; margin-bottom: .45rem;
   }
-
-  .qtc-chevron {
-    width: 36px; height: 36px;
-    border-radius: 50%;
-    border: 1.5px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    color: var(--text-muted);
-    font-size: 1rem;
-    flex-shrink: 0;
-    transition: all 0.3s;
+  .db-live-dot {
+    width: 6px; height: 6px; background: var(--secondary);
+    border-radius: 50%; animation: pulse 2s infinite; flex-shrink: 0;
   }
-  .quiz-trigger-card:hover .qtc-chevron,
-  .quiz-trigger-card.active .qtc-chevron {
-    border-color: var(--primary);
-    color: var(--primary);
-    background: var(--primary-light);
+  .db-actions { display: flex; gap: 8px; align-items: center; }
+  .db-btn-out {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: 1.5px solid var(--border); background: white;
+    color: var(--text-soft); padding: 8px 18px;
+    border-radius: var(--radius-sm); font-weight: 700; font-size: .82rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    text-decoration: none; transition: all .2s;
   }
-  .qtc-chevron i { transition: transform 0.3s; }
-  .quiz-trigger-card.active .qtc-chevron i { transform: rotate(180deg); }
+  .db-btn-out:hover { border-color:var(--primary); color:var(--primary); background:var(--primary-light); transform:translateY(-1px); }
+  .db-btn-red {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #fff5f5; color: var(--danger);
+    border: 1.5px solid transparent; padding: 8px 18px;
+    border-radius: var(--radius-sm); font-weight: 700; font-size: .82rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    text-decoration: none; transition: all .2s;
+  }
+  .db-btn-red:hover { background:var(--danger); color:white; transform:translateY(-1px); box-shadow:0 4px 14px rgba(239,68,68,.25); }
 
   /* ════════════════════════════════════════
-     CLASSES COLLAPSE PANEL
+     CARD BASE
   ════════════════════════════════════════ */
-  .classes-panel {
-    margin-top: 16px;
-    animation: dashFadeUp 0.55s 0.18s ease both;
+  .db-card {
+    background: white; border: 1.5px solid var(--border);
+    border-radius: var(--radius-xl); box-shadow: var(--shadow-card);
+    overflow: hidden; position: relative;
   }
-
-  .classes-panel-inner {
-    background: var(--bg);
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 24px;
-    overflow: hidden;
-  }
-
-  .classes-panel-header {
+  .db-card-hdr {
+    display: flex; align-items: center; gap: .5rem;
+    padding: 1rem 1.5rem .85rem;
+    border-bottom: 1.5px solid var(--border);
     font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    font-size: .7rem; font-weight: 800;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted);
   }
-  .classes-panel-header i { font-size: 0.9rem; color: var(--primary); }
 
-  /* Class cards grid */
-  .classes-grid {
+  /* ════════════════════════════════════════
+     2-COL GRID
+  ════════════════════════════════════════ */
+  .db-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 12px;
+    grid-template-columns: 320px 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+    align-items: start;
   }
+  @media (max-width: 860px) { .db-grid { grid-template-columns: 1fr; } }
 
-  .class-card {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: white;
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-md);
-    padding: 14px 16px;
-    text-decoration: none;
-    color: var(--text);
-    transition: all 0.22s cubic-bezier(0.34,1.56,0.64,1);
-    position: relative;
-    overflow: hidden;
+  /* ════════════════════════════════════════
+     USER INFO CARD
+  ════════════════════════════════════════ */
+  .db-user-card {
+    opacity: 0; animation: dbUp .55s .12s ease forwards;
   }
-
-  .class-card::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 3px;
-    background: linear-gradient(180deg, var(--primary), var(--secondary));
-    border-radius: 3px 0 0 3px;
-    transform: scaleY(0);
-    transition: transform 0.22s ease;
-    transform-origin: bottom;
+  .db-user-card::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; height: 4px;
+    background: linear-gradient(90deg, var(--primary), #3b82f6, var(--secondary));
   }
-
-  .class-card:hover {
-    border-color: var(--primary-mid);
-    color: var(--text);
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: var(--shadow-hover);
+  .db-user-body {
+    padding: 1.75rem 1.5rem 1.5rem;
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center; gap: .8rem;
   }
-  .class-card:hover::before { transform: scaleY(1); }
-
-  .class-card-num {
-    width: 36px; height: 36px;
-    border-radius: 9px;
-    background: var(--primary-light);
-    color: var(--primary);
+  .db-avatar {
+    width: 76px; height: 76px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), #3b82f6);
     display: flex; align-items: center; justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 800;
     font-family: 'Plus Jakarta Sans', sans-serif;
-    flex-shrink: 0;
-    transition: background 0.2s, color 0.2s;
+    font-size: 1.9rem; font-weight: 800; color: white;
+    box-shadow: 0 6px 20px rgba(37,99,235,.3);
+    position: relative; flex-shrink: 0;
   }
-  .class-card:hover .class-card-num {
-    background: var(--primary);
-    color: white;
+  .db-avatar::after {
+    content: ''; position: absolute;
+    bottom: 3px; right: 3px;
+    width: 13px; height: 13px;
+    background: var(--secondary); border-radius: 50%;
+    border: 2.5px solid white;
   }
-
-  .class-card-name {
+  .db-uname {
     font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 0.88rem;
-    font-weight: 700;
-    color: var(--text);
-    line-height: 1.3;
-    flex: 1;
+    font-size: 1.2rem; font-weight: 800;
+    color: var(--text); letter-spacing: -.02em; margin: 0;
   }
-
-  .class-card-arrow {
-    color: var(--text-muted);
-    font-size: 0.8rem;
-    flex-shrink: 0;
-    transition: transform 0.2s, color 0.2s;
+  .db-uhandle {
+    font-size: .76rem; color: var(--text-muted); font-weight: 600; margin: -.3rem 0 0;
   }
-  .class-card:hover .class-card-arrow {
-    transform: translateX(3px);
-    color: var(--primary);
+  .db-u-badges {
+    display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
   }
-
-  /* Empty state */
-  .classes-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 40px 20px;
-    text-align: center;
-  }
-
-  .classes-empty-icon {
-    width: 64px; height: 64px;
-    background: var(--primary-light);
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.6rem;
-    color: var(--primary);
-    margin-bottom: 16px;
-  }
-
-  .classes-empty-title {
+  .dbb {
+    display: inline-flex; align-items: center; gap: 4px;
+    border-radius: 100px; padding: 4px 11px;
     font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--text);
-    margin-bottom: 6px;
+    font-size: .7rem; font-weight: 700;
   }
+  .dbb-blue  { background:var(--primary-light);  color:var(--primary);        border:1px solid var(--primary-mid); }
+  .dbb-green { background:var(--secondary-light); color:var(--secondary-hover); border:1px solid rgba(16,185,129,.22); }
+  .dbb-gray  { background:#f1f5f9; color:var(--text-soft); border:1px solid var(--border); }
+  .db-u-sep  { width:100%; height:1px; background:var(--border); }
+  .db-edit-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; padding: 8px 16px;
+    background: var(--primary-light); color: var(--primary);
+    border: 1.5px solid var(--primary-mid); border-radius: var(--radius-sm);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: .8rem; font-weight: 700;
+    text-decoration: none; transition: all .2s;
+  }
+  .db-edit-btn:hover { background:var(--primary); color:white; border-color:var(--primary); transform:translateY(-1px); box-shadow:var(--shadow-btn); }
 
-  .classes-empty-sub {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    margin: 0;
+  /* ════════════════════════════════════════
+     PERFORMANCE CARD
+  ════════════════════════════════════════ */
+  .db-perf-card {
+    opacity: 0; animation: dbUp .55s .2s ease forwards;
+  }
+  .db-perf-body {
+    padding: 1.25rem;
+    display: grid; grid-template-columns: 1fr 1fr; gap: .85rem;
+  }
+  .db-tile {
+    background: var(--bg); border: 1.5px solid var(--border);
+    border-radius: var(--radius-md); padding: 1rem 1.15rem;
+    display: flex; flex-direction: column; gap: .25rem;
+    transition: all .22s; position: relative; overflow: hidden;
+  }
+  .db-tile:hover { border-color:var(--primary-mid); transform:translateY(-2px); box-shadow:var(--shadow-hover); }
+  .db-tile::after {
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    border-radius:2px 2px 0 0; opacity:0; transition:opacity .2s;
+  }
+  .db-tile:hover::after { opacity:1; }
+  .t-blue::after  { background:var(--primary); }
+  .t-green::after { background:var(--secondary); }
+  .t-indigo::after{ background:#6366f1; }
+  .t-amber::after { background:#f59e0b; }
+  .db-tile-ico {
+    width:34px; height:34px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:.95rem; flex-shrink:0; margin-bottom:.1rem;
+  }
+  .ico-b { background:rgba(37,99,235,.1);  color:var(--primary); }
+  .ico-g { background:rgba(16,185,129,.1); color:var(--secondary); }
+  .ico-i { background:rgba(99,102,241,.1); color:#6366f1; }
+  .ico-a { background:rgba(245,158,11,.1); color:#d97706; }
+  .db-tile-val {
+    font-family:'Plus Jakarta Sans',sans-serif;
+    font-size:1.55rem; font-weight:800; color:var(--text); line-height:1;
+  }
+  .db-tile-lbl {
+    font-size:.7rem; font-weight:600; color:var(--text-muted);
+    font-family:'Plus Jakarta Sans',sans-serif;
+  }
+  .db-tile.dim { opacity:.6; cursor:default; }
+  .db-tile.dim:hover { transform:none; box-shadow:none; }
+  .soon-tag {
+    display:inline-flex; align-items:center; gap:3px;
+    font-size:.6rem; font-weight:700;
+    background:#fefce8; color:#92400e; border:1px solid #fde68a;
+    border-radius:100px; padding:2px 7px;
+    font-family:'Plus Jakarta Sans',sans-serif;
+    letter-spacing:.05em; text-transform:uppercase;
+    width:fit-content; margin-top:.1rem;
   }
 
   /* ════════════════════════════════════════
-     RECENT ACTIVITY PLACEHOLDER
+     TAKE QUIZ SECTION
   ════════════════════════════════════════ */
-  .dash-tip-card {
-    background: linear-gradient(135deg, #0f2d6e 0%, #1d4ed8 60%, var(--primary) 100%);
-    border-radius: var(--radius-xl);
-    padding: 28px 28px 24px;
-    color: white;
-    position: relative;
-    overflow: hidden;
-    animation: dashFadeUp 0.55s 0.22s ease both;
+  .db-quiz-wrap {
+    opacity:0; animation:dbUp .55s .3s ease forwards;
   }
-
-  .dash-tip-card::before {
-    content: '';
-    position: absolute;
-    top: -80px; right: -80px;
-    width: 280px; height: 280px;
-    background: radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 65%);
-    pointer-events: none;
+  .db-quiz-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:4px;
+    background:linear-gradient(90deg, var(--secondary), #34d399, var(--primary));
   }
-
-  .dash-tip-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.2);
-    color: rgba(255,255,255,0.85);
-    border-radius: 100px;
-    padding: 4px 12px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    margin-bottom: 12px;
+  .db-quiz-body { padding:1.25rem; }
+  .db-cls-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(185px, 1fr));
+    gap:.7rem;
   }
-
-  .dash-tip-title {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 1.1rem;
-    font-weight: 800;
-    color: white;
-    margin-bottom: 8px;
-    letter-spacing: -0.01em;
+  .db-cls-card {
+    display:flex; align-items:center; gap:11px;
+    background:var(--bg); border:1.5px solid var(--border);
+    border-radius:var(--radius-md); padding:.85rem 1rem;
+    text-decoration:none; color:var(--text);
+    transition:all .22s cubic-bezier(.34,1.56,.64,1);
+    position:relative; overflow:hidden;
   }
-
-  .dash-tip-text {
-    font-size: 0.85rem;
-    color: rgba(255,255,255,0.72);
-    line-height: 1.65;
-    margin-bottom: 18px;
+  .db-cls-card::before {
+    content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
+    background:linear-gradient(180deg, var(--primary), var(--secondary));
+    transform:scaleY(0); transform-origin:bottom; transition:transform .22s;
   }
-
-  .btn-tip-action {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: white;
-    color: var(--primary);
-    border: none;
-    border-radius: var(--radius-sm);
-    padding: 9px 20px;
-    font-weight: 800;
-    font-size: 0.85rem;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    text-decoration: none;
-    transition: all 0.2s;
+  .db-cls-card:hover { border-color:var(--primary-mid); background:white; transform:translateY(-3px); box-shadow:var(--shadow-hover); color:var(--text); }
+  .db-cls-card:hover::before { transform:scaleY(1); }
+  .db-cls-num {
+    width:32px; height:32px; border-radius:8px;
+    background:var(--primary-light); color:var(--primary);
+    display:flex; align-items:center; justify-content:center;
+    font-size:.72rem; font-weight:800;
+    font-family:'Plus Jakarta Sans',sans-serif; flex-shrink:0;
+    transition:background .2s, color .2s;
   }
-  .btn-tip-action:hover {
-    background: var(--primary-light);
-    color: var(--primary-hover);
-    transform: translateY(-1px);
+  .db-cls-card:hover .db-cls-num { background:var(--primary); color:white; }
+  .db-cls-name {
+    font-family:'Plus Jakarta Sans',sans-serif;
+    font-size:.84rem; font-weight:700; flex:1; line-height:1.3;
   }
+  .db-cls-arr {
+    color:var(--text-muted); font-size:.78rem;
+    flex-shrink:0; transition:transform .2s, color .2s;
+  }
+  .db-cls-card:hover .db-cls-arr { transform:translateX(3px); color:var(--primary); }
+  .db-cls-empty {
+    text-align:center; padding:2.5rem 1rem; color:var(--text-muted);
+  }
+  .db-cls-empty i { font-size:1.8rem; color:var(--primary-mid); display:block; margin-bottom:.7rem; }
+  .db-cls-empty p { font-size:.84rem; margin:0; }
 
   /* ════════════════════════════════════════
-     ANIMATION
+     ANIMATIONS
   ════════════════════════════════════════ */
-  @keyframes dashFadeUp {
-    from { opacity: 0; transform: translateY(18px); }
-    to   { opacity: 1; transform: translateY(0); }
+  @keyframes dbUp {
+    from { opacity:0; transform:translateY(18px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  @keyframes pulse {
+    0%,100%{ opacity:1; transform:scale(1); }
+    50%    { opacity:.5; transform:scale(1.4); }
   }
 
-  /* Mobile tweaks */
-  @media (max-width: 575.98px) {
-    .dash-header { flex-direction: column; }
-    .dash-header-actions { width: 100%; }
-    .btn-dash-outline, .btn-dash-danger { flex: 1; justify-content: center; }
-    .dash-stat-pill { min-width: 120px; }
-    .classes-grid { grid-template-columns: 1fr; }
-    .qtc-inner { flex-direction: column; align-items: flex-start; gap: 14px; }
-    .qtc-chevron { align-self: flex-end; }
+  @media (max-width:575.98px) {
+    .db-greeting { flex-direction:column; align-items:flex-start; }
+    .db-actions { width:100%; }
+    .db-btn-out, .db-btn-red { flex:1; justify-content:center; }
+    .db-perf-body { grid-template-columns:1fr 1fr; }
+    .db-cls-grid { grid-template-columns:1fr; }
   }
 </style>
 {% endblock %}
 
 
 {% block content %}
+<div class="db-page">
+<div class="container">
 
-<section class="dash-section">
-  <div class="container">
+  <!-- ══ GREETING ═══════════════════════════════════════ -->
+  <div class="db-greeting">
+    <div>
+      <div class="db-live-chip"><span class="db-live-dot"></span> Dashboard</div>
+      <h1>Hey, {{ request.user.first_name|default:request.user.username }} 👋</h1>
+      <p>Ready to level up? Pick a quiz and start practicing.</p>
+    </div>
+    <div class="db-actions">
+      <a href="{% url 'logout' %}" class="db-btn-red">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </a>
+    </div>
+  </div>
 
-    <!-- ══════════════════════════════════════
-         HEADER — Welcome + Action Buttons
-    ══════════════════════════════════════ -->
-    <div class="dash-header">
 
-      <!-- Left: greeting -->
-      <div>
-        <div class="dash-greeting-eyebrow">
-          <span class="live-dot"></span>
-          Dashboard
-        </div>
-        <h1 class="dash-welcome-name">
-          Welcome, {{ request.user.first_name|default:request.user.username }} 👋
-        </h1>
-        <p class="dash-welcome-sub">
-          Ready to level up? Pick a class and start your quiz session.<br>
-          Every question brings you one step closer to your goal.
-        </p>
+  <!-- ══ 2-COL GRID ════════════════════════════════════ -->
+  <div class="db-grid">
+
+    <!-- ── User Info ──────────────────────────────────── -->
+    <div class="db-card db-user-card">
+      <div class="db-card-hdr">
+        <i class="bi bi-person-fill" style="color:var(--primary);"></i>
+        My Profile
       </div>
+      <div class="db-user-body">
 
-      <!-- Right: action buttons -->
-      <div class="dash-header-actions">
-        <a href="{% url 'edit_profile' %}" class="btn-dash-outline">
-          <i class="bi bi-pencil-square"></i>Edit Profile
+        <div class="db-avatar">
+          {{ request.user.first_name|default:request.user.username|slice:":1"|upper }}
+        </div>
+
+        <div>
+          <p class="db-uname">{{ request.user.first_name|default:request.user.username }}</p>
+          <p class="db-uhandle">@{{ request.user.username }}</p>
+        </div>
+
+        <div class="db-u-badges">
+          {% if request.user.email %}
+          <span class="dbb dbb-gray"><i class="bi bi-envelope-fill"></i>{{ request.user.email }}</span>
+          {% endif %}
+          {% if request.user.profile.education %}
+          <span class="dbb dbb-blue"><i class="bi bi-mortarboard-fill"></i>{{ request.user.profile.education }}</span>
+          {% endif %}
+          {% if request.user.profile.get_class_name_display %}
+          <span class="dbb dbb-green"><i class="bi bi-journal-bookmark-fill"></i>{{ request.user.profile.get_class_name_display }}</span>
+          {% endif %}
+        </div>
+
+        <div class="db-u-sep"></div>
+
+        <a href="{% url 'edit_profile' %}" class="db-edit-btn">
+          <i class="bi bi-pencil-square"></i> Edit Profile
         </a>
-        <a href="{% url 'logout' %}" class="btn-dash-danger">
-          <i class="bi bi-box-arrow-right"></i>Logout
-        </a>
-      </div>
 
+      </div>
     </div>
 
-
-    <!-- ══════════════════════════════════════
-         STATS STRIP
-    ══════════════════════════════════════ -->
-    <div class="dash-stats-strip">
-
-      <div class="dash-stat-pill">
-        <div class="dash-stat-icon icon-blue">
-          <i class="bi bi-collection-fill"></i>
-        </div>
-        <div>
-          <div class="dash-stat-val">{{ classes|length }}</div>
-          <div class="dash-stat-lbl">Classes Available</div>
-        </div>
+    <!-- ── Performance ───────────────────────────────── -->
+    <div class="db-card db-perf-card">
+      <div class="db-card-hdr">
+        <i class="bi bi-graph-up-arrow" style="color:var(--secondary);"></i>
+        Performance
       </div>
+      <div class="db-perf-body">
 
-      <div class="dash-stat-pill">
-        <div class="dash-stat-icon icon-green">
-          <i class="bi bi-check2-circle"></i>
+        <div class="db-tile t-blue">
+          <div class="db-tile-ico ico-b"><i class="bi bi-check2-circle"></i></div>
+          <div class="db-tile-val">{{ total_quizzes_taken|default:"0" }}</div>
+          <div class="db-tile-lbl">Quizzes Taken</div>
         </div>
-        <div>
-          <div class="dash-stat-val">{{ total_quizzes_taken|default:"0" }}</div>
-          <div class="dash-stat-lbl">Quizzes Taken</div>
+
+        <div class="db-tile t-green">
+          <div class="db-tile-ico ico-g"><i class="bi bi-trophy-fill"></i></div>
+          <div class="db-tile-val">{{ best_score|default:"—" }}</div>
+          <div class="db-tile-lbl">Best Score</div>
         </div>
+
+        <div class="db-tile t-indigo dim">
+          <div class="db-tile-ico ico-i"><i class="bi bi-bar-chart-fill"></i></div>
+          <div class="db-tile-val">—</div>
+          <div class="db-tile-lbl">Avg Score</div>
+          <span class="soon-tag">⏳ Soon</span>
+        </div>
+
+        <div class="db-tile t-amber dim">
+          <div class="db-tile-ico ico-a"><i class="bi bi-fire"></i></div>
+          <div class="db-tile-val">—</div>
+          <div class="db-tile-lbl">Day Streak</div>
+          <span class="soon-tag">⏳ Soon</span>
+        </div>
+
       </div>
-
-      <div class="dash-stat-pill">
-        <div class="dash-stat-icon icon-indigo">
-          <i class="bi bi-graph-up-arrow"></i>
-        </div>
-        <div>
-          <div class="dash-stat-val">{{ best_score|default:"—" }}</div>
-          <div class="dash-stat-lbl">Best Score</div>
-        </div>
-      </div>
-
     </div>
-
-
-    <!-- ══════════════════════════════════════
-         MAIN CONTENT GRID
-    ══════════════════════════════════════ -->
-    <div class="row g-4">
-
-      <!-- Left col: Start Quiz card + classes -->
-      <div class="col-12 col-lg-8">
-
-        <div class="dash-section-label">
-          <i class="bi bi-play-circle-fill" style="color:var(--primary);"></i>
-          Start a Quiz
-        </div>
-
-        <!-- ── Start Quiz trigger card ── -->
-        <div class="quiz-trigger-card" id="quizTrigger"
-             data-bs-toggle="collapse"
-             data-bs-target="#classesCollapse"
-             aria-expanded="false"
-             aria-controls="classesCollapse"
-             role="button">
-          <div class="qtc-inner">
-            <div class="qtc-left">
-              <div class="qtc-icon-wrap">
-                <i class="bi bi-mortarboard-fill"></i>
-              </div>
-              <div>
-                <p class="qtc-title">Start Quiz</p>
-                <p class="qtc-desc">Choose a class to begin your practice session.<br>Instant feedback after every question.</p>
-              </div>
-            </div>
-            <div class="qtc-chevron" aria-hidden="true">
-              <i class="bi bi-chevron-down"></i>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── Classes collapse panel ── -->
-        <div class="collapse classes-panel" id="classesCollapse">
-          <div class="classes-panel-inner">
-
-            <div class="classes-panel-header">
-              <i class="bi bi-grid-3x3-gap-fill"></i>
-              Select a Class
-            </div>
-
-            {% if classes %}
-              <div class="classes-grid">
-                {% for class in classes %}
-                <a href="/class/{{ class.id }}/" class="class-card">
-                  <div class="class-card-num">{{ forloop.counter }}</div>
-                  <span class="class-card-name">{{ class.name }}</span>
-                  <i class="bi bi-arrow-right class-card-arrow"></i>
-                </a>
-                {% endfor %}
-              </div>
-
-            {% else %}
-              <div class="classes-empty">
-                <div class="classes-empty-icon">
-                  <i class="bi bi-inbox"></i>
-                </div>
-                <p class="classes-empty-title">No class available</p>
-                <p class="classes-empty-sub">Check back later — new classes are added regularly.</p>
-              </div>
-            {% endif %}
-
-          </div>
-        </div>
-        <!-- /classes collapse -->
-
-      </div>
-
-      <!-- Right col: tip / promo card -->
-      <div class="col-12 col-lg-4">
-
-        <div class="dash-section-label">
-          <i class="bi bi-lightbulb-fill" style="color:#f59e0b;"></i>
-          Quick Tip
-        </div>
-
-        <div class="dash-tip-card">
-          <div class="dash-tip-badge">
-            <i class="bi bi-star-fill"></i> Pro Tip
-          </div>
-          <h3 class="dash-tip-title">Consistency beats cramming</h3>
-          <p class="dash-tip-text">
-            Students who practice 15–20 minutes daily score up to
-            <strong style="color:white;">40% higher</strong> than those who cram
-            the night before. Start small — pick one class right now.
-          </p>
-          <a href="#classesCollapse"
-             data-bs-toggle="collapse"
-             data-bs-target="#classesCollapse"
-             class="btn-tip-action">
-            <i class="bi bi-play-fill"></i>Pick a Class
-          </a>
-        </div>
-
-      </div>
-
-    </div>
-    <!-- /row -->
 
   </div>
-</section>
+  <!-- /db-grid -->
 
+
+  <!-- ══ TAKE QUIZ ═════════════════════════════════════ -->
+  <div class="db-quiz-wrap">
+    <div class="db-card db-quiz-card">
+      <div class="db-card-hdr">
+        <i class="bi bi-play-circle-fill" style="color:var(--secondary);"></i>
+        Take a Quiz
+      </div>
+      <div class="db-quiz-body">
+        {% if classes %}
+          <div class="db-cls-grid">
+            {% for class in classes %}
+            <a href="/class/{{ class.id }}/" class="db-cls-card">
+              <div class="db-cls-num">{{ forloop.counter }}</div>
+              <span class="db-cls-name">{{ class.name }}</span>
+              <i class="bi bi-arrow-right db-cls-arr"></i>
+            </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="db-cls-empty">
+            <i class="bi bi-inbox"></i>
+            <p>No classes available yet — check back soon!</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
 {% endblock %}
 
 
 {% block extra_js %}
 <script>
-(function () {
+(function(){
   'use strict';
-
-  /* Toggle .active class on the trigger card when collapse opens/closes */
-  const collapseEl = document.getElementById('classesCollapse');
-  const triggerCard = document.getElementById('quizTrigger');
-
-  if (collapseEl && triggerCard) {
-    collapseEl.addEventListener('show.bs.collapse', function () {
-      triggerCard.classList.add('active');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if(e.isIntersecting){ e.target.classList.add('visible'); io.unobserve(e.target); }
     });
-    collapseEl.addEventListener('hide.bs.collapse', function () {
-      triggerCard.classList.remove('active');
-    });
-  }
+  },{ threshold:.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 })();
 </script>
 {% endblock %}

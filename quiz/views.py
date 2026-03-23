@@ -5,7 +5,8 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 import re
 import json
-
+from django.contrib.auth import update_session_auth_hash
+from django.contrib import messages
 from .models import Class, Subject, Quiz, QuizAttempt
 
 
@@ -311,14 +312,15 @@ def health(request):
     return HttpResponse("Server running")
 
 
-from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash
+
 
 @login_required
 def edit_profile(request):
 
+    user = request.user
+    profile = user.profile   # 🔥 move this up (important)
+
     if request.method == "POST":
-        user = request.user
 
         # update basic info
         user.first_name = request.POST.get("full_name")
@@ -326,8 +328,8 @@ def edit_profile(request):
         user.save()
 
         # update profile
-        profile = user.profile
         profile.education = request.POST.get("education")
+        profile.class_name = request.POST.get("class_name")   # ✅ ADD THIS
         profile.save()
 
         # password change
@@ -340,7 +342,7 @@ def edit_profile(request):
                 if new_pass == confirm_pass:
                     user.set_password(new_pass)
                     user.save()
-                    update_session_auth_hash(request, user)  # 🔥 important
+                    update_session_auth_hash(request, user)
                     messages.success(request, "Password updated!")
                 else:
                     messages.error(request, "Passwords do not match")
@@ -349,5 +351,9 @@ def edit_profile(request):
 
         messages.success(request, "Profile updated!")
         return redirect("edit_profile")
+    from .models import Profile
 
-    return render(request, "quiz/edit-profile.html")
+    return render(request, "quiz/edit-profile.html", {
+        "profile": profile ,
+        "class_choices": Profile._meta.get_field("class_name").choices
+    })
