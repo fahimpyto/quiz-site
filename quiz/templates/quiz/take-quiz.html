@@ -1,234 +1,355 @@
 {% extends "quiz/base.html" %}
 {% load static %}
 
-{% block title %}{{ quiz.title }}{% endblock %}
+{% block title %}{{ quiz.title }} – QuizMaster{% endblock %}
+
+{% block extra_css %}
+<style>
+
+  /* ── Shell takes full viewport height minus navbar ─── */
+  .quiz-shell {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 73px);
+    background: #f1f5f9;
+    overflow: hidden;
+  }
+
+  /* ════════════════════════════════════════
+     FIXED TOP BAR
+  ════════════════════════════════════════ */
+  .qz-top {
+    flex-shrink: 0;
+    background: white;
+    border-bottom: 1.5px solid var(--border);
+    box-shadow: 0 2px 14px rgba(37,99,235,.07);
+    z-index: 10;
+  }
+  .qz-top-inner {
+    max-width: 860px; margin: 0 auto;
+    padding: .85rem 1.25rem .7rem;
+    display: flex; align-items: center;
+    justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  }
+  .qz-quiz-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: .97rem; font-weight: 800;
+    color: var(--text); letter-spacing: -.015em;
+    display: flex; align-items: center; gap: 8px; margin: 0;
+  }
+  .qz-icon {
+    width: 28px; height: 28px; border-radius: 7px;
+    background: linear-gradient(135deg, var(--primary), #3b82f6);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: .8rem; flex-shrink: 0;
+  }
+  .qz-right { display: flex; align-items: center; gap: .65rem; }
+
+  /* Progress pill */
+  .qz-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--primary-light); color: var(--primary);
+    border: 1px solid var(--primary-mid); border-radius: 100px;
+    padding: 4px 12px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: .73rem; font-weight: 700;
+  }
+
+  /* Timer */
+  .qz-timer {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: white; border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm); padding: 5px 14px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: .93rem; font-weight: 800; color: var(--text);
+    letter-spacing: .04em; transition: all .3s;
+  }
+  .qz-timer.warn   { border-color: #f97316; color: #ea580c; background: #fff7ed; }
+  .qz-timer.danger { border-color: var(--danger); color: var(--danger); background: #fff5f5;
+                     animation: blink .55s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.6} }
+
+  /* Thin progress bar under top bar */
+  .qz-bar-track { height: 4px; background: #e2e8f0; }
+  .qz-bar-fill  {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), #3b82f6);
+    width: 0%; border-radius: 0 4px 4px 0;
+    transition: width .4s ease;
+  }
+
+  /* ════════════════════════════════════════
+     SCROLLABLE AREA
+  ════════════════════════════════════════ */
+  .qz-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.4rem 1.25rem 1rem;
+    scroll-behavior: smooth;
+  }
+  .qz-scroll-inner {
+    max-width: 860px; margin: 0 auto;
+    display: flex; flex-direction: column; gap: .9rem;
+  }
+
+  /* Question card */
+  .q-card {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.2rem 1.35rem;
+    box-shadow: var(--shadow-card);
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .q-card.answered {
+    border-color: var(--primary-mid);
+    box-shadow: 0 0 0 3px rgba(37,99,235,.06), var(--shadow-card);
+  }
+  .q-head {
+    display: flex; align-items: flex-start; gap: .7rem; margin-bottom: .9rem;
+  }
+  .q-num {
+    width: 26px; height: 26px; border-radius: 7px;
+    background: var(--primary-light); color: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: .7rem; font-weight: 800; flex-shrink: 0;
+    transition: background .2s, color .2s;
+  }
+  .q-card.answered .q-num { background: var(--primary); color: white; }
+  .q-text {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: .95rem; font-weight: 600;
+    color: var(--text); line-height: 1.55; margin: 0;
+  }
+
+  /* Options */
+  .q-opts { display: flex; flex-direction: column; gap: .45rem; }
+  .q-opt {
+    display: flex; align-items: center; gap: .7rem;
+    padding: .68rem 1rem;
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    cursor: pointer; background: var(--bg);
+    transition: all .18s; user-select: none;
+  }
+  .q-opt:hover:not(.locked) { border-color: var(--primary-mid); background: var(--primary-light); }
+  .q-opt input[type="radio"] { display: none; }
+  .q-letter {
+    width: 22px; height: 22px; border-radius: 5px;
+    border: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: .68rem; font-weight: 800; color: var(--text-muted);
+    flex-shrink: 0; transition: all .18s;
+  }
+  .q-opt-txt { font-size: .88rem; color: var(--text); line-height: 1.4; }
+
+  .q-opt.selected { background: var(--primary); border-color: var(--primary); cursor: default; }
+  .q-opt.selected .q-letter { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.4); color: white; }
+  .q-opt.selected .q-opt-txt { color: white; font-weight: 600; }
+  .q-opt.locked:not(.selected) { opacity: .5; cursor: default; }
+
+  /* ════════════════════════════════════════
+     FIXED BOTTOM BAR
+  ════════════════════════════════════════ */
+  .qz-bottom {
+    flex-shrink: 0;
+    background: white;
+    border-top: 1.5px solid var(--border);
+    box-shadow: 0 -4px 20px rgba(37,99,235,.07);
+    padding: .85rem 1.25rem;
+    z-index: 10;
+  }
+  .qz-bottom-inner {
+    max-width: 860px; margin: 0 auto;
+    display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  }
+  .qz-count {
+    flex: 1;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: .8rem; font-weight: 600; color: var(--text-muted);
+  }
+  .qz-count b { color: var(--primary); font-size: .95rem; font-weight: 800; }
+
+  .qz-submit {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: .72rem 2rem;
+    background: linear-gradient(135deg, var(--primary), #3b82f6);
+    color: white; border: none; border-radius: var(--radius-sm);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: .93rem; font-weight: 800;
+    cursor: pointer; box-shadow: var(--shadow-btn);
+    transition: transform .18s, box-shadow .18s, opacity .18s; flex-shrink: 0;
+  }
+  .qz-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,99,235,.38); }
+  .qz-submit:active { transform: translateY(0); opacity: .9; }
+  .qz-submit:disabled { opacity: .7; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  @media (max-width: 575.98px) {
+    .qz-quiz-title span { display: none; }
+    .qz-scroll { padding: 1rem .75rem; }
+    .q-card { padding: 1rem; }
+    .qz-bottom-inner { flex-direction: column; gap: .6rem; }
+    .qz-submit { width: 100%; justify-content: center; }
+  }
+</style>
+{% endblock %}
+
 
 {% block content %}
+<div class="quiz-shell">
 
-<div class="container" style="max-width:900px;margin:auto;padding:30px 20px;">
+  <!-- ══ FIXED TOP BAR ═════════════════════════════════ -->
+  <div class="qz-top">
+    <div class="qz-top-inner">
 
-  <h2 style="margin-bottom:20px;">⚡ {{ quiz.title }}</h2>
+      <h1 class="qz-quiz-title">
+        <span class="qz-icon"><i class="bi bi-lightning-charge-fill"></i></span>
+        <span>{{ quiz.title }}</span>
+      </h1>
 
-  <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
-    <div><b id="progress">0 / {{ questions|length }}</b> answered</div>
-    <div><b id="timer">--:--</b></div>
-  </div>
-
-  <div style="height:6px;background:#eee;border-radius:10px;margin-bottom:25px;">
-    <div id="progressBar" style="height:6px;background:#2563eb;width:0%;border-radius:10px;"></div>
-  </div>
-
-  <form id="quizForm">
-    {% csrf_token %}
-
-    {% for q in questions %}
-
-    <div class="question-card">
-
-      <p class="question-text">
-        <b>Q{{ forloop.counter }}.</b> {{ q.text }}
-      </p>
-
-      <div class="options">
-
-        {% for opt in q.options %}
-
-        <label class="option">
-
-          <input
-            type="radio"
-            name="q{{ forloop.parentloop.counter }}"
-            value="{{ forloop.counter0 }}"
-            onclick="lockQuestion(this)"
-          >
-
-          <span>{{ opt }}</span>
-
-        </label>
-
-        {% endfor %}
-
+      <div class="qz-right">
+        <div class="qz-pill">
+          <i class="bi bi-check2-circle"></i>
+          <span id="progressText">0 / {{ questions|length }}</span>
+        </div>
+        <div class="qz-timer" id="timerChip">
+          <i class="bi bi-clock"></i>
+          <span id="timerText">--:--</span>
+        </div>
       </div>
 
     </div>
+    <div class="qz-bar-track"><div class="qz-bar-fill" id="progressBar"></div></div>
+  </div>
 
-    {% endfor %}
+  <!-- ══ SCROLLABLE QUESTIONS ═════════════════════════ -->
+  <div class="qz-scroll">
+    <form id="quizForm">
+      {% csrf_token %}
+      <div class="qz-scroll-inner">
 
-    <button type="button" class="submit-btn" onclick="submitQuiz()">
-      Submit Quiz
-    </button>
+        {% for q in questions %}
+        <div class="q-card" id="qcard{{ forloop.counter }}">
+          <div class="q-head">
+            <div class="q-num">{{ forloop.counter }}</div>
+            <p class="q-text">{{ q.text }}</p>
+          </div>
+          <div class="q-opts">
+            {% for opt in q.options %}
+            <label class="q-opt">
+              <input
+                type="radio"
+                name="q{{ forloop.parentloop.counter }}"
+                value="{{ forloop.counter0 }}"
+                onclick="lockQuestion(this)"
+              >
+              <div class="q-letter">?</div>
+              <span class="q-opt-txt">{{ opt }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
 
-  </form>
+      </div>
+    </form>
+  </div>
+
+  <!-- ══ FIXED BOTTOM BAR ═════════════════════════════ -->
+  <div class="qz-bottom">
+    <div class="qz-bottom-inner">
+      <p class="qz-count">
+        <b id="answeredNum">0</b> of {{ questions|length }} answered
+      </p>
+      <button type="button" class="qz-submit" id="submitBtn" onclick="submitQuiz()">
+        <i class="bi bi-send-fill"></i> Submit Quiz
+      </button>
+    </div>
+  </div>
 
 </div>
+{% endblock %}
 
 
-<style>
-  .question-card {
-    background: #fff;
-    padding: 20px;
-    margin-bottom: 18px;
-    border-radius: 10px;
-    border: 1px solid #e5e7eb;
-  }
-
-  .question-text {
-    font-size: 16px;
-    margin-bottom: 10px;
-  }
-
-  .options {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .option {
-    display: flex;
-    gap: 8px;
-    padding: 10px;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    cursor: pointer;
-  }
-
-  .option:hover {
-    background: #f9fafb;
-  }
-
-  .option.selected {
-    background: #2563eb;
-    color: white;
-    border-color: #2563eb;
-  }
-
-  .submit-btn {
-    margin-top: 25px;
-    width: 100%;
-    height: 44px;
-    background: #2563eb;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  
-  .submit-btn:hover {
-    background: #1d4ed8;
-  }
-</style>
-
-
+{% block extra_js %}
 <script>
+(function(){
 
-  // ── Fix 1: answers object declared at top scope ──────────
-  let answers = {};
-
-  // ── Fix 2 & 5: reset memory + clear storage on page load ─
-  window.addEventListener("load", function () {
-    answers = {};
-    localStorage.removeItem("quiz_answers");
+  /* A B C D … letters */
+  const ABC = ['A','B','C','D','E','F','G','H'];
+  document.querySelectorAll('.q-opts').forEach(opts => {
+    opts.querySelectorAll('.q-letter').forEach((el, i) => { el.textContent = ABC[i] || (i+1); });
   });
 
-  // ── Progress tracking ─────────────────────────────────────
+  /* Answers store */
+  let answers = {};
+  window.addEventListener('load', () => { answers = {}; localStorage.removeItem('quiz_answers'); });
+
   let answered = 0;
-  const total = {{ questions|length }};
+  const total  = {{ questions|length }};
 
   function lockQuestion(input) {
+    const card = input.closest('.q-card');
+    if (card.dataset.locked) return;
+    card.dataset.locked = '1';
+    card.classList.add('answered');
 
-    const container = input.closest(".question-card");
+    card.querySelectorAll('.q-opt').forEach(o => {
+      o.classList.add('locked');
+      o.querySelector('input').disabled = true;
+    });
+    input.closest('.q-opt').classList.add('selected');
 
-    if (container.dataset.locked) return;
-
-    container.dataset.locked = "true";
-
-    const options = container.querySelectorAll("input");
-    options.forEach(o => o.disabled = true);
-
-    input.parentElement.classList.add("selected");
-
-    const qIndex = input.name.replace("q", "");
-    const optIndex = input.value;
-
-    answers[qIndex] = optIndex;
-
+    answers[input.name.replace('q','')] = input.value;
     answered++;
 
-    document.getElementById("progress").innerText =
-      answered + " / " + total + " answered";
-
-    document.getElementById("progressBar").style.width =
-      (answered / total * 100) + "%";
+    document.getElementById('progressText').textContent = answered + ' / ' + total;
+    document.getElementById('answeredNum').textContent  = answered;
+    document.getElementById('progressBar').style.width  = (answered / total * 100) + '%';
   }
+  window.lockQuestion = lockQuestion;
 
-  // ── Fix 3: track selections into answers object ───────────
-  // (handled inside lockQuestion above — no separate listener needed)
+  /* Timer */
+  let dur = {{ duration }} * 60;
+  const chip      = document.getElementById('timerChip');
+  const timerText = document.getElementById('timerText');
 
-  // ── Timer ─────────────────────────────────────────────────
-  let duration = {{ duration }} * 60;
-  const timerEl = document.getElementById("timer");
-
-  function updateTimer() {
-    let m = Math.floor(duration / 60);
-    let s = duration % 60;
-
-    timerEl.innerText =
-      String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
-
-    if (duration <= 0) {
-      submitQuiz();
-      return;
-    }
-
-    duration--;
+  function tick() {
+    const m = Math.floor(dur / 60), s = dur % 60;
+    timerText.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    chip.classList.toggle('warn',   dur <= 120 && dur > 60);
+    chip.classList.toggle('danger', dur <= 60);
+    if (dur <= 0) { submitQuiz(); return; }
+    dur--;
   }
+  tick();
+  setInterval(tick, 1000);
 
-  updateTimer();
-  setInterval(updateTimer, 1000);
+  /* CSRF */
+  function csrf() { return document.querySelector('[name=csrfmiddlewaretoken]').value; }
 
-  // ── CSRF helper ───────────────────────────────────────────
-  function getCSRFToken() {
-    return document.querySelector("[name=csrfmiddlewaretoken]").value;
-  }
-
-  // ── Fix 4: submit with payload snapshot + reset after ─────
+  /* Submit */
   function submitQuiz() {
-
-    // Snapshot current answers, then clear global immediately
-    const payload = { ...answers };
-
-    const btn = document.querySelector(".submit-btn");
-    if (btn) {
-      btn.innerText = "Submitting...";
-      btn.disabled = true;
-    }
+    const payload = {...answers};
+    const btn = document.getElementById('submitBtn');
+    if (btn) { btn.textContent = 'Submitting…'; btn.disabled = true; }
 
     fetch(`/quiz/{{ quiz.id }}/submit/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": getCSRFToken()
-      },
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-CSRFToken': csrf()},
       body: JSON.stringify(payload)
     })
-    .then(res => res.json())
-    .then(data => {
-      answers = {};                          // RESET MEMORY
-      localStorage.removeItem("quiz_answers");
-      window.location.href = data.redirect;
-    })
-    .catch(err => {
-      console.error("Error:", err);
-      alert("Failed to submit quiz. Please try again.");
-      if (btn) {
-        btn.innerText = "Submit Quiz";
-        btn.disabled = false;
-      }
+    .then(r => r.json())
+    .then(d => { answers = {}; localStorage.removeItem('quiz_answers'); window.location.href = d.redirect; })
+    .catch(e => {
+      console.error(e);
+      alert('Failed to submit. Please try again.');
+      if (btn) { btn.innerHTML = '<i class="bi bi-send-fill"></i> Submit Quiz'; btn.disabled = false; }
     });
   }
+  window.submitQuiz = submitQuiz;
 
+})();
 </script>
-
 {% endblock %}

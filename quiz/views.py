@@ -8,6 +8,8 @@ import json
 from django.contrib.auth import update_session_auth_hash
 from django.contrib import messages
 from .models import Class, Subject, Quiz, QuizAttempt
+from django.db.models import Sum, Count
+from .models import QuizAttempt
 
 
 # Landing page
@@ -88,13 +90,37 @@ def logout_view(request):
 
 
 # Dashboard
+
+
 @login_required
 def dashboard(request):
 
     classes = Class.objects.all()
 
+    attempts = QuizAttempt.objects.filter(user=request.user)
+
+    total_quizzes = attempts.count()
+
+    total_questions = attempts.aggregate(total=Sum('total'))['total'] or 0
+    total_correct = attempts.aggregate(score=Sum('score'))['score'] or 0
+
+    total_wrong = total_questions - total_correct
+
+    # skipped (we didn't store directly → estimate)
+    # (if you want exact later, we upgrade model)
+    total_skipped = 0  
+
+    # percentages
+    correct_pct = round((total_correct / total_questions) * 100) if total_questions else 0
+    wrong_pct = round((total_wrong / total_questions) * 100) if total_questions else 0
+    skipped_pct = 0
+
     return render(request, "quiz/dashboard.html", {
-        "classes": classes
+        "classes": classes,
+        "total_quizzes_taken": total_quizzes,
+        "correct_pct": correct_pct,
+        "wrong_pct": wrong_pct,
+        "skipped_pct": skipped_pct,
     })
 
 
@@ -232,7 +258,10 @@ def submit_quiz(request, quiz_id):
             quiz=quiz,
             score=score,
             total=total,
-            attempt_number=attempt_count
+            correct=correct,
+            wrong=wrong,
+            skipped=skipped,
+            ttempt_number=attempt_count
         )
 
         request.session["quiz_result"] = {
@@ -356,4 +385,29 @@ def edit_profile(request):
     return render(request, "quiz/edit-profile.html", {
         "profile": profile ,
         "class_choices": Profile._meta.get_field("class_name").choices
+    })
+
+from django.contrib.auth.models import User
+from django.shortcuts import get_object_or_404
+
+@login_required
+def user_profile(request, username):
+    user_obj = get_object_or_404(User, username=username)
+    profile = user_obj.profile
+
+    attempts = QuizAttempt.objects.filter(user=user_obj)
+
+    total_quiz = attempts.count()
+    total_questions = sum(a.total for a in attempts)
+    total_correct = sum(a.correct for a in attempts)
+
+    accuracy = 0
+    if total_questions > 0:
+        accuracy = round((total_correct / total_questions) * 100)
+
+    return render(request, "quiz/user-profile.html", {
+        "profile_user": user_obj,
+        "profile": profile,
+        "total_quiz": total_quiz,
+        "accuracy": accuracy,
     })

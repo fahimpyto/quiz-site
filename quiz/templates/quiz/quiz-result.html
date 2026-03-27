@@ -492,7 +492,9 @@
               {{ forloop.counter }}
             </div>
             <div class="lb-avatar">
-              {{ item.user.username|first|upper }}
+              <a href="{% url 'user_profile' item.user.username %}"">
+                {{ item.user.username }}
+              </a>
             </div>
             <div class="lb-name">
               {{ item.user.username }}

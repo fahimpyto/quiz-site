@@ -1,0 +1,296 @@
+{% extends "quiz/base.html" %}
+{% load static %}
+
+{% block title %}{{ profile_user.first_name|default:profile_user.username }} – QuizMaster{% endblock %}
+{% block meta_description %}View {{ profile_user.username }}'s QuizMaster profile, quiz stats and performance.{% endblock %}
+
+{% block extra_css %}
+<style>
+
+  /* ── Page ───────────────────────────────────────────────── */
+  .up-page {
+    min-height: calc(100vh - 73px);
+    background:
+      radial-gradient(ellipse 60% 40% at 100% 0%, rgba(37,99,235,.06) 0%, transparent 55%),
+      radial-gradient(ellipse 40% 50% at 0% 100%, rgba(16,185,129,.05) 0%, transparent 55%),
+      #f1f5f9;
+    padding: 3rem 0 5rem;
+  }
+
+  /* ── Hero banner ────────────────────────────────────────── */
+  .up-hero {
+    background: linear-gradient(135deg, #1e3a8a 0%, var(--primary) 55%, #3b82f6 100%);
+    border-radius: var(--radius-xl);
+    padding: 2.5rem 2rem 4.5rem;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: -3rem;
+    opacity: 0;
+    animation: upFade .55s .05s ease forwards;
+  }
+  .up-hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+  .up-hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,.15); color: rgba(255,255,255,.9);
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 100px; padding: 4px 14px;
+    font-size: .7rem; font-weight: 700;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: .1em; text-transform: uppercase;
+    margin-bottom: .75rem;
+  }
+  .up-hero-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1rem; font-weight: 600;
+    color: rgba(255,255,255,.7); margin: 0;
+  }
+
+  /* ── Profile card ───────────────────────────────────────── */
+  .up-card {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-hover);
+    overflow: hidden;
+    position: relative;
+    opacity: 0;
+    animation: upFade .6s .2s ease forwards;
+  }
+
+  .up-card-body {
+    padding: 2rem 2rem 1.75rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  /* Avatar */
+  .up-avatar {
+    width: 88px; height: 88px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), #3b82f6);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 2.2rem; font-weight: 800; color: white;
+    box-shadow: 0 6px 24px rgba(37,99,235,.35);
+    flex-shrink: 0;
+    border: 4px solid white;
+    margin-top: -3.5rem;
+    position: relative; z-index: 2;
+  }
+
+  /* Name block */
+  .up-name-block { flex: 1; min-width: 180px; }
+  .up-name {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.5rem; font-weight: 800;
+    color: var(--text); letter-spacing: -.025em;
+    margin: 0 0 .15rem;
+  }
+  .up-handle {
+    font-size: .82rem; font-weight: 600; color: var(--text-muted);
+    margin: 0 0 .75rem;
+  }
+
+  /* Info badges */
+  .up-badges {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .up-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    border-radius: 100px; padding: 4px 12px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: .72rem; font-weight: 700;
+  }
+  .ub-blue  { background: var(--primary-light);  color: var(--primary);        border: 1px solid var(--primary-mid); }
+  .ub-green { background: var(--secondary-light); color: var(--secondary-hover); border: 1px solid rgba(16,185,129,.22); }
+  .ub-gray  { background: #f1f5f9; color: var(--text-soft); border: 1px solid var(--border); }
+
+  /* Card divider */
+  .up-divider { border-color: var(--border); margin: 0; }
+
+  /* ── Stats row ──────────────────────────────────────────── */
+  .up-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    opacity: 0;
+    animation: upFade .6s .32s ease forwards;
+  }
+
+  .up-stat {
+    padding: 1.4rem 2rem;
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center; gap: .25rem;
+    transition: background .2s;
+  }
+  .up-stat:hover { background: var(--bg); }
+  .up-stat + .up-stat { border-left: 1.5px solid var(--border); }
+
+  .up-stat-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.05rem; margin-bottom: .3rem;
+  }
+  .usi-blue  { background: var(--primary-light);  color: var(--primary); }
+  .usi-green { background: var(--secondary-light); color: var(--secondary-hover); }
+
+  .up-stat-val {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.75rem; font-weight: 800;
+    color: var(--text); line-height: 1;
+  }
+  .up-stat-lbl {
+    font-size: .74rem; font-weight: 600; color: var(--text-muted);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  /* ── Accuracy bar card ──────────────────────────────────── */
+  .up-acc-card {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-card);
+    padding: 1.5rem;
+    opacity: 0;
+    animation: upFade .6s .42s ease forwards;
+  }
+  .up-acc-label {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: .75rem;
+  }
+  .up-acc-label span {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: .78rem; font-weight: 700; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: .08em;
+  }
+  .up-acc-label strong {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.1rem; font-weight: 800; color: var(--secondary-hover);
+  }
+  .up-acc-track {
+    height: 10px; background: var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+  .up-acc-fill {
+    height: 100%; border-radius: 10px;
+    background: linear-gradient(90deg, var(--secondary), #34d399);
+    width: {{ accuracy }}%;
+    transition: width 1s cubic-bezier(.4,0,.2,1);
+  }
+  .up-acc-sub {
+    margin-top: .5rem; font-size: .76rem; color: var(--text-muted);
+    font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600;
+  }
+
+  /* ── Animations ─────────────────────────────────────────── */
+  @keyframes upFade {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Responsive ─────────────────────────────────────────── */
+  @media (max-width: 575.98px) {
+    .up-card-body { padding: 1.5rem; gap: 1rem; }
+    .up-avatar { width: 70px; height: 70px; font-size: 1.7rem; margin-top: -2.8rem; }
+    .up-stats { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="up-page">
+<div class="container" style="max-width:640px;">
+
+  <!-- ── Hero Banner ──────────────────────────────────────── -->
+  <div class="up-hero">
+    <div class="up-hero-eyebrow">
+      <i class="bi bi-person-circle"></i> User Profile
+    </div>
+    <p class="up-hero-title">QuizMaster · Public Profile</p>
+  </div>
+
+  <!-- ── Profile Card ─────────────────────────────────────── -->
+  <div class="up-card">
+
+    <div class="up-card-body">
+
+      <!-- Avatar (overlaps hero) -->
+      <div class="up-avatar">
+        {{ profile_user.first_name|default:profile_user.username|slice:":1"|upper }}
+      </div>
+
+      <!-- Name + badges -->
+      <div class="up-name-block">
+        <h1 class="up-name">{{ profile_user.first_name|default:profile_user.username }}</h1>
+        <p class="up-handle">@{{ profile_user.username }}</p>
+        <div class="up-badges">
+          {% if profile_user.email %}
+          <span class="up-badge ub-gray">
+            <i class="bi bi-envelope-fill"></i> {{ profile_user.email }}
+          </span>
+          {% endif %}
+          {% if profile.education %}
+          <span class="up-badge ub-blue">
+            <i class="bi bi-mortarboard-fill"></i> {{ profile.education }}
+          </span>
+          {% endif %}
+          {% if profile.class_name %}
+          <span class="up-badge ub-green">
+            <i class="bi bi-journal-bookmark-fill"></i> {{ profile.class_name }}
+          </span>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+
+    <hr class="up-divider">
+
+    <!-- Stats row -->
+    <div class="up-stats">
+
+      <div class="up-stat">
+        <div class="up-stat-icon usi-blue">
+          <i class="bi bi-check2-circle"></i>
+        </div>
+        <div class="up-stat-val">{{ total_quiz }}</div>
+        <div class="up-stat-lbl">Quizzes Taken</div>
+      </div>
+
+      <div class="up-stat">
+        <div class="up-stat-icon usi-green">
+          <i class="bi bi-bullseye"></i>
+        </div>
+        <div class="up-stat-val">{{ accuracy }}%</div>
+        <div class="up-stat-lbl">Accuracy</div>
+      </div>
+
+    </div>
+
+  </div>
+  <!-- /profile card -->
+
+  <!-- ── Accuracy Bar ──────────────────────────────────────── -->
+  <div class="up-acc-card mt-3">
+    <div class="up-acc-label">
+      <span><i class="bi bi-graph-up-arrow me-1"></i> Accuracy Rate</span>
+      <strong>{{ accuracy }}%</strong>
+    </div>
+    <div class="up-acc-track">
+      <div class="up-acc-fill"></div>
+    </div>
+    <p class="up-acc-sub">
+      Based on {{ total_quiz }} quiz{{ total_quiz|pluralize }} completed
+    </p>
+  </div>
+
+</div>
+</div>
+{% endblock %}

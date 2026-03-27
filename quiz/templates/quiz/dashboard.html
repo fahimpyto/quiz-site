@@ -203,17 +203,6 @@
     font-size:.7rem; font-weight:600; color:var(--text-muted);
     font-family:'Plus Jakarta Sans',sans-serif;
   }
-  .db-tile.dim { opacity:.6; cursor:default; }
-  .db-tile.dim:hover { transform:none; box-shadow:none; }
-  .soon-tag {
-    display:inline-flex; align-items:center; gap:3px;
-    font-size:.6rem; font-weight:700;
-    background:#fefce8; color:#92400e; border:1px solid #fde68a;
-    border-radius:100px; padding:2px 7px;
-    font-family:'Plus Jakarta Sans',sans-serif;
-    letter-spacing:.05em; text-transform:uppercase;
-    width:fit-content; margin-top:.1rem;
-  }
 
   /* ════════════════════════════════════════
      TAKE QUIZ SECTION
@@ -363,28 +352,26 @@
 
         <div class="db-tile t-blue">
           <div class="db-tile-ico ico-b"><i class="bi bi-check2-circle"></i></div>
-          <div class="db-tile-val">{{ total_quizzes_taken|default:"0" }}</div>
+          <div class="db-tile-val">{{ total_quizzes_taken }}</div>
           <div class="db-tile-lbl">Quizzes Taken</div>
         </div>
 
         <div class="db-tile t-green">
-          <div class="db-tile-ico ico-g"><i class="bi bi-trophy-fill"></i></div>
-          <div class="db-tile-val">{{ best_score|default:"—" }}</div>
-          <div class="db-tile-lbl">Best Score</div>
+          <div class="db-tile-ico ico-g"><i class="bi bi-check-circle-fill"></i></div>
+          <div class="db-tile-val">{{ correct_pct }}%</div>
+          <div class="db-tile-lbl">Correct</div>
         </div>
 
-        <div class="db-tile t-indigo dim">
-          <div class="db-tile-ico ico-i"><i class="bi bi-bar-chart-fill"></i></div>
-          <div class="db-tile-val">—</div>
-          <div class="db-tile-lbl">Avg Score</div>
-          <span class="soon-tag">⏳ Soon</span>
+        <div class="db-tile t-indigo">
+          <div class="db-tile-ico ico-i"><i class="bi bi-x-circle-fill"></i></div>
+          <div class="db-tile-val">{{ wrong_pct }}%</div>
+          <div class="db-tile-lbl">Wrong</div>
         </div>
 
-        <div class="db-tile t-amber dim">
-          <div class="db-tile-ico ico-a"><i class="bi bi-fire"></i></div>
-          <div class="db-tile-val">—</div>
-          <div class="db-tile-lbl">Day Streak</div>
-          <span class="soon-tag">⏳ Soon</span>
+        <div class="db-tile t-amber">
+          <div class="db-tile-ico ico-a"><i class="bi bi-dash-circle-fill"></i></div>
+          <div class="db-tile-val">{{ skipped_pct }}%</div>
+          <div class="db-tile-lbl">Skipped</div>
         </div>
 
       </div>

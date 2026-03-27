@@ -29,7 +29,11 @@
 
 <td>{{ forloop.counter }}</td>
 
-<td>{{ item.user.username }}</td>
+<td>
+    <a href="{% url 'user_profile' item.user.username %}">
+        {{ item.user.username }}
+    </a>
+</td>
 
 <td>{{ item.attempt_number }}</td>
 
