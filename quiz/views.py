@@ -261,7 +261,7 @@ def submit_quiz(request, quiz_id):
             correct=correct,
             wrong=wrong,
             skipped=skipped,
-            ttempt_number=attempt_count
+            attempt_number=attempt_count
         )
 
         request.session["quiz_result"] = {
